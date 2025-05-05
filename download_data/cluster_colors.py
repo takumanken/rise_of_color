@@ -16,7 +16,7 @@ def main():
     color_data.sort(key=lambda x: x.get("year", 0))
 
     # Parameters
-    k_values = [4, 6, 8, 10, 12]
+    k_values = [4, 8, 16, 32, 64]
 
     # Preprocess colors for efficiency
     unique_rgb_set = set()
