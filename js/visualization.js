@@ -138,7 +138,6 @@ function reset() {
   // Reset UI
   state.yearDisplay.textContent = "–";
   document.getElementById("total-colors").textContent = "0";
-  document.getElementById("year-colors").textContent = "0";
   state.progressFill.style.width = "0%";
   state.playButton.textContent = "Start";
 
@@ -159,7 +158,6 @@ function step() {
 
   // Update UI
   state.yearDisplay.textContent = yearData.year;
-  document.getElementById("year-colors").textContent = yearColors.length;
   document.getElementById("total-colors").textContent = state.colorData.length;
   state.progressFill.style.width = `${((state.i + 1) / state.data.length) * 100}%`;
 
