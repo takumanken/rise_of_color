@@ -76,6 +76,15 @@ export class Renderer {
     this.controls.enableDamping = true;
     this.controls.dampingFactor = CONFIG.camera.damping;
 
+    // Add an initial camera movement to show dimension
+    setTimeout(() => {
+      this.controls.autoRotate = true;
+      this.controls.autoRotateSpeed = CONFIG.camera.autoRotateSpeed;
+      setTimeout(() => {
+        this.controls.autoRotate = false;
+      }, CONFIG.camera.autoRotateDuration);
+    }, 1000);
+
     // Main color wheel group
     this.group = new THREE.Group();
     this.scene.add(this.group);
@@ -85,14 +94,22 @@ export class Renderer {
   }
 
   setupLighting() {
-    // Keep ambient light
-    const ambientLight = new THREE.AmbientLight(0xffffff, 0.5);
+    // Ambient light - kept for base illumination
+    const ambientLight = new THREE.AmbientLight(
+      CONFIG.visualEffects.lighting.ambient.color,
+      CONFIG.visualEffects.lighting.ambient.intensity
+    );
     this.scene.add(ambientLight);
 
-    // Keep main directional light
-    const mainLight = new THREE.DirectionalLight(0xffffff, 0.8);
-    mainLight.position.set(1, 1, 1);
+    // Main directional light - kept for primary highlights
+    const mainLight = new THREE.DirectionalLight(
+      CONFIG.visualEffects.lighting.main.color,
+      CONFIG.visualEffects.lighting.main.intensity
+    );
+    mainLight.position.set(...CONFIG.visualEffects.lighting.main.position);
     this.scene.add(mainLight);
+
+    // Rim light removed - the shader-based rim effect is sufficient
   }
 
   handleResize() {
