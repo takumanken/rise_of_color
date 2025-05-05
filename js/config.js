@@ -58,7 +58,7 @@ export const CONFIG = {
     spheres: {
       opacity: 1,
       colorIntensity: 1.1,
-      sizeMultiplier: 0.5,
+      sizeMultiplier: 1,
       materialProperties: {
         matte: true,
         specularIntensity: 0.05,
@@ -68,11 +68,11 @@ export const CONFIG = {
         outlineForDarkColors: true,
         outlineColor: 0x555555,
         outlineOpacity: 0.25,
-        outlineThickness: 1.03,
+        outlineThickness: 1.01,
       },
     },
     originalPoints: {
-      opacityWhenClustered: 0.25,
+      opacityWhenClustered: 0,
     },
   },
 };
