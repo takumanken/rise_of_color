@@ -3,32 +3,52 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>3D Color Wheel Visualization</title>
+  <title>Rise of Color - 3D Color Wheel Visualization</title>
   <link rel="stylesheet" href="css/style.css">
 </head>
 <body>
-  <div class="info">
-    <h3>Rise of Color</h3>
-    <p>Drag to rotate</p>
-  </div>
-  
-  <!-- Dynamic UI elements will be created by JavaScript -->
-  <div id="year-display">–</div>
-  <div id="stats-container"><span id="total-colors">0</span> Total Colors</div>
-  <div id="progress-bar"><div id="progress-fill"></div></div>
-  <button id="play-pause">Start</button>
-  
-  <div class="cluster-controls">
-    <button id="toggle-clusters">Show Clusters</button>
-    <select id="cluster-k" style="display: none;">
-      <option value="4">4 Clusters</option>
-      <option value="6" selected>6 Clusters</option>
-      <option value="8">8 Clusters</option>
-      <option value="10">10 Clusters</option>
-      <option value="12">12 Clusters</option>
-    </select>
-  </div>
+  <!-- Left info panel -->
+  <div class="info-panel">
+    <!-- Header section -->
+    <div>
+      <h1 class="title">Rise of Color</h1>
+      <p class="subtitle">A visualization of color trends in photos through time</p>
+      
+      <div id="year-display">–</div>
+      <div id="stats-container"><span id="total-colors">0</span> Total Colors</div>
+      
+      <div id="progress-bar"><div id="progress-fill"></div></div>
+    </div>
     
+    <!-- Controls section -->
+    <div class="controls-container">
+      <button id="play-pause">Start</button>
+      
+      <div class="cluster-controls">
+        <button id="toggle-clusters">Show Clusters</button>
+        <select id="cluster-k" style="display: none;">
+          <option value="4">4 Clusters</option>
+          <option value="8">8 Clusters</option>
+          <option value="16" selected>16 Clusters</option>
+          <option value="32">32 Clusters</option>
+          <option value="64">64 Clusters</option>
+        </select>
+      </div>
+    </div>
+    
+    <!-- Footer section -->
+    <div class="footer-info">
+      <div class="credits">
+        Created by: Tak Watanabe<br>
+        Source: Photos from <a href="https://commons.wikimedia.org/wiki/Commons" target="_blank">Wikimedia Commons</a>
+      </div>
+    </div>
+  </div>
+  
+  <!-- Right visualization area -->
+  <div class="visualization"></div>
+  
+  <!-- Three.js module imports -->
   <script type="importmap">
   {
     "imports": {
@@ -41,7 +61,7 @@
   }
   </script>
   
-  <!-- Import as a module -->
+  <!-- Main application script -->
   <script type="module" src="js/visualization.js"></script>
 </body>
 </html>

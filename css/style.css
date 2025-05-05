@@ -1,78 +1,97 @@
-/* Basic page styling */
+/* Basic page styling - use flexbox with fixed layout */
 body {
   margin: 0;
   overflow: hidden;
   background-color: #000;
   color: white;
   font-family: Arial, sans-serif;
+  display: flex;
+  width: 100vw;
+  height: 100vh;
 }
 
-/* Info panel in the bottom left */
-.info {
+/* Left panel container - add divider */
+.info-panel {
+  width: 25%;
+  min-width: 300px; /* Ensure minimum width for text readability */
+  height: 100vh;
+  padding: 40px;
+  padding-left: 120px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  box-sizing: border-box;
+  z-index: 10;
+  flex-shrink: 0; /* Prevent flexbox from squeezing this container */
+  position: relative; /* For pseudo-element positioning */
+}
+
+/* Add divider using pseudo-element */
+.info-panel::after {
+  content: '';
   position: absolute;
-  bottom: 20px;
-  left: 20px;
-  background: rgba(0,0,0,0.7);
-  padding: 10px;
-  border-radius: 5px;
+  top: 0%;
+  right: -40px; /* Move 20px to the right of the info panel edge */
+  width: 2px;
+  height: 100%;
+  background: linear-gradient(
+    to bottom,
+    rgba(255, 255, 255, 0),
+    rgba(255, 255, 255, 0.2) 10%,
+    rgba(255, 255, 255, 0.2) 90%,
+    rgba(255, 255, 255, 0)
+  );
 }
 
-/* Controls panel - keeping for reference though not currently used */
-.controls {
-  position: absolute;
-  top: 20px;
-  right: 20px;
-  background: rgba(0,0,0,0.7);
-  padding: 10px;
-  border-radius: 5px;
+/* Visualization container - ensure it's exactly 75% width and full height */
+.visualization {
+  width: 75%;
+  height: 100vh;
+  position: relative;
+  overflow: hidden; /* Prevent scrollbars */
+  flex-shrink: 0; /* Prevent flexbox from squeezing this container */
 }
 
-/* Button styling */
-button {
-  background: rgba(255,255,255,0.2);
-  color: white;
-  border: none;
-  padding: 8px 12px;
-  margin: 5px;
-  cursor: pointer;
-  border-radius: 4px;
-}
-
-button:hover {
-  background: rgba(255,255,255,0.3);
-}
-
-/* Year display at the top */
-#year-display {
-  position: absolute;
-  top: 50px;
-  width: 100%;
-  text-align: center;
-  font-size: 2.4rem;
+/* Title styling - larger and more prominent */
+.title {
+  font-size: 3.5rem;
   font-weight: 900;
+  margin-bottom: 10px;
+  letter-spacing: -1px;
+  line-height: 1;
+}
+
+/* Subtitle */
+.subtitle {
+  font-size: 1rem;
+  margin-bottom: 40px;
+  opacity: 0.7;
+}
+
+/* Year display - much more prominent */
+#year-display {
+  font-size: 7rem;
+  font-weight: 900;
+  line-height: 1;
+  margin-top: 20px;
+  margin-bottom: 10px;
+  letter-spacing: -2px;
 }
 
 /* Stats container below year display */
 #stats-container {
-  position: absolute;
-  top: 110px;
-  width: 100%;
-  text-align: center;
-  font-size: 1rem;
+  font-size: 1.2rem;
+  margin-bottom: 40px;
 }
 
-/* Progress bar at the bottom */
+/* Progress bar styling */
 #progress-bar {
-  position: absolute;
-  bottom: 20px;
-  left: 50%;
-  transform: translateX(-50%);
-  width: 80%;
-  max-width: 800px;
+  width: 100%;
   height: 4px;
   background: rgba(255,255,255,0.2);
   border-radius: 2px;
   overflow: hidden;
+  margin-bottom: 20px;
 }
 
 #progress-fill {
@@ -82,32 +101,73 @@ button:hover {
   transition: width 0.3s ease;
 }
 
-/* Play/pause button at the bottom */
-#play-pause {
-  position: absolute;
-  bottom: 40px;
-  left: 50%;
-  transform: translateX(-50%);
+/* Controls container */
+.controls-container {
+  margin-bottom: 40px;
 }
 
-/* Cluster controls next to play/pause button */
+/* Button styling */
+button {
+  background: rgba(255,255,255,0.2);
+  color: white;
+  border: none;
+  padding: 10px 20px;
+  margin-right: 10px;
+  margin-bottom: 10px;
+  cursor: pointer;
+  border-radius: 4px;
+  font-size: 1rem;
+}
+
+button:hover {
+  background: rgba(255,255,255,0.3);
+}
+
+/* Cluster controls styling */
 .cluster-controls {
-  position: absolute;
-  bottom: 20px;
-  left: 200px;  /* Position next to play/pause button */
-  z-index: 10;
+  margin-top: 20px;
 }
 
-.cluster-controls button, .cluster-controls select {
+.cluster-controls select {
   background: rgba(0,0,0,0.7);
   color: white;
   border: 1px solid rgba(255,255,255,0.3);
   padding: 8px 15px;
   border-radius: 5px;
   cursor: pointer;
-  margin-right: 10px;
+  margin-top: 10px;
+  font-size: 1rem;
 }
 
-.cluster-controls select {
-  padding: 6px 10px;
+/* Ensure the canvas fills its container */
+canvas {
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: 100% !important; /* Force full width */
+  height: 100% !important; /* Force full height */
+  outline: none;
+}
+
+/* Info at the bottom */
+.footer-info {
+  font-size: 0.9rem;
+  opacity: 0.7;
+  line-height: 1.5;
+}
+
+/* Add credits */
+.credits {
+  margin-top: 15px;
+  font-size: 0.8rem;
+  opacity: 0.6;
+}
+
+.credits a {
+  color: rgba(255, 255, 255, 0.8);
+  text-decoration: none;
+}
+
+.credits a:hover {
+  text-decoration: underline;
 }

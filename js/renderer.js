@@ -48,7 +48,21 @@ export class Renderer {
   }
 
   setupCamera() {
-    this.camera = new THREE.PerspectiveCamera(CONFIG.camera.fov, window.innerWidth / window.innerHeight, 1, 1000);
+    // Get the visualization container dimensions for correct aspect ratio
+    const vizContainer = document.querySelector(".visualization") || {
+      clientWidth: window.innerWidth * 0.75,
+      clientHeight: window.innerHeight,
+    };
+    const aspect = vizContainer.clientWidth / vizContainer.clientHeight;
+
+    // Create camera with proper aspect ratio
+    this.camera = new THREE.PerspectiveCamera(
+      CONFIG.camera.fov,
+      aspect, // Use the visualization container's aspect ratio
+      1,
+      1000
+    );
+
     this.camera.position.set(...CONFIG.camera.initialPosition);
   }
 
@@ -57,9 +71,15 @@ export class Renderer {
       antialias: true,
       powerPreference: "high-performance",
     });
-    this.renderer.setSize(window.innerWidth, window.innerHeight);
+
+    // Get the visualization div dimensions
+    const vizContainer = document.querySelector(".visualization");
+    const containerWidth = vizContainer.clientWidth;
+    const containerHeight = vizContainer.clientHeight;
+
+    this.renderer.setSize(containerWidth, containerHeight);
     this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1));
-    document.body.appendChild(this.renderer.domElement);
+    vizContainer.appendChild(this.renderer.domElement);
 
     // Enhanced visual settings
     this.renderer.outputEncoding = THREE.sRGBEncoding;
@@ -106,9 +126,13 @@ export class Renderer {
   }
 
   handleResize() {
-    this.camera.aspect = window.innerWidth / window.innerHeight;
+    const vizContainer = document.querySelector(".visualization");
+    const containerWidth = vizContainer.clientWidth;
+    const containerHeight = vizContainer.clientHeight;
+
+    this.camera.aspect = containerWidth / containerHeight;
     this.camera.updateProjectionMatrix();
-    this.renderer.setSize(window.innerWidth, window.innerHeight);
+    this.renderer.setSize(containerWidth, containerHeight);
 
     // Maintain consistent zoom
     if (!CONFIG.camera.zoomControl.enabled) {
