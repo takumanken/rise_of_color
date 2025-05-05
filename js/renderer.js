@@ -30,17 +30,9 @@ const INSTANCE_FRAGMENT_SHADER = (config) => `
   varying vec3 vNormal;
 
   void main() {
-    vec3 light = normalize(vec3(0.5, 0.8, 0.5));
-    float diffuse = max(dot(vNormal, light), 0.0);
-
-    vec3 viewDir = normalize(vec3(0.0, 0.0, 1.0));
-    float rim = pow(1.0 - abs(dot(vNormal, viewDir)), ${config.pointAppearance.shader.rimFalloff.toFixed(1)});
-
-    vec3 finalColor = vColor * (${config.pointAppearance.shader.ambientIntensity.toFixed(2)} + 
-                                ${config.pointAppearance.shader.diffuseIntensity.toFixed(2)} * diffuse);
-
-    finalColor = mix(finalColor, vec3(1.0), rim * ${config.pointAppearance.shader.rimIntensity.toFixed(2)});
-
+    // Just use original color with minimal spherical shading
+    vec3 finalColor = vColor * ${config.pointAppearance.shader.ambientIntensity.toFixed(2)};
+    
     gl_FragColor = vec4(finalColor, 1.0);
   }
 `;
@@ -94,22 +86,14 @@ export class Renderer {
   }
 
   setupLighting() {
-    // Ambient light - kept for base illumination
+    // Ambient light only
     const ambientLight = new THREE.AmbientLight(
       CONFIG.visualEffects.lighting.ambient.color,
       CONFIG.visualEffects.lighting.ambient.intensity
     );
     this.scene.add(ambientLight);
 
-    // Main directional light - kept for primary highlights
-    const mainLight = new THREE.DirectionalLight(
-      CONFIG.visualEffects.lighting.main.color,
-      CONFIG.visualEffects.lighting.main.intensity
-    );
-    mainLight.position.set(...CONFIG.visualEffects.lighting.main.position);
-    this.scene.add(mainLight);
-
-    // Rim light removed - the shader-based rim effect is sufficient
+    // Both main and rim lights removed
   }
 
   handleResize() {

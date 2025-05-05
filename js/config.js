@@ -5,10 +5,9 @@ export const CONFIG = {
   smallSphereRadius: 0.05,
   shells: 50,
   rotationSpeed: 0.001,
-  animationSpeed: 200,
+  animationSpeed: 50,
 
   camera: {
-    // distance removed (unused)
     initialPosition: [70, 70, 240],
     autoRotateSpeed: 0.5,
     autoRotateDuration: 3000,
@@ -19,20 +18,16 @@ export const CONFIG = {
   grayscaleThreshold: 0.05,
   colorDepth: 7,
 
-  // Keep only the lighting section from visualEffects
+  // Simplified lighting section - main light removed
   visualEffects: {
     lighting: {
       ambient: {
-        intensity: 0.4,
+        intensity: 1.8, // Increased for more uniform brightness
         color: 0xffffff,
       },
-      main: {
-        intensity: 0.8,
-        color: 0xffffff,
-        position: [1, 1, 1],
-      },
+      // main light removed
       rim: {
-        intensity: 0.7,
+        intensity: 0, // Keep at 0 to avoid distorting colors
         color: 0xffffff,
         position: [-1, 0.5, -1],
       },
@@ -45,16 +40,14 @@ export const CONFIG = {
     minSize: 0.8,
     maxSize: 1.2,
     shader: {
-      rimIntensity: 0.1,
+      rimIntensity: 0.2, // Reduced significantly
       rimFalloff: 5,
-      edgeDarkening: 0,
+      edgeDarkening: 0.1, // Nearly eliminated
       edgeThreshold: 1,
-      diffuseIntensity: 1,
-      ambientIntensity: 1,
+      diffuseIntensity: 0.3, // Reduced significantly
+      ambientIntensity: 1.7, // Increased to dominate the lighting
     },
   },
-
-  // Removed: shininess, specular, emissiveIntensity, opacity
 
   jitter: {
     enabled: true,
