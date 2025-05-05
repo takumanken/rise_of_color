@@ -10,6 +10,7 @@ export const CONFIG = {
   // CAMERA
   camera: {
     initialPosition: [70, 70, 240],
+    initialRotation: 180,
     autoRotateSpeed: 0.5,
     autoRotateDuration: 3000,
     damping: 0.05,

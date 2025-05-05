@@ -77,17 +77,30 @@ export class Renderer {
   setupControls() {
     this.controls = new OrbitControls(this.camera, this.renderer.domElement);
 
-    // Disable zoom completely
+    // Disable zoom
     this.controls.enableZoom = false;
 
-    // Set initial camera position at fixed distance
+    // Set initial camera position
     this.camera.position.set(...CONFIG.camera.initialPosition);
+
+    // Set initial rotation angle (convert degrees to radians)
+    const initialAngleRad = ((CONFIG.camera.initialRotation || 0) * Math.PI) / 180;
+
+    // Calculate new camera position at the same distance but with desired angle
+    const distance = Math.sqrt(Math.pow(this.camera.position.x, 2) + Math.pow(this.camera.position.z, 2));
+
+    this.camera.position.x = Math.sin(initialAngleRad) * distance;
+    this.camera.position.z = Math.cos(initialAngleRad) * distance;
+
+    // Make sure camera is looking at center
+    this.controls.target.set(0, 0, 0);
+    this.camera.lookAt(0, 0, 0);
 
     // Other controls settings
     this.controls.enableDamping = true;
     this.controls.dampingFactor = CONFIG.camera.damping;
 
-    // Auto-rotation settings remain unchanged
+    // Auto-rotation settings (unchanged)
     setTimeout(() => {
       this.controls.autoRotate = true;
       this.controls.autoRotateSpeed = CONFIG.camera.autoRotateSpeed;
