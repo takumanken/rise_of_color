@@ -193,6 +193,21 @@ function setupClusterControls() {
   const toggleButton = document.getElementById("toggle-clusters");
   const kSelect = document.getElementById("cluster-k");
 
+  // Clear existing options
+  kSelect.innerHTML = "";
+
+  // Add new k-values
+  const kValues = [4, 8, 16, 32, 64];
+  kValues.forEach((k) => {
+    const option = document.createElement("option");
+    option.value = k;
+    option.textContent = `${k} Clusters`;
+    kSelect.appendChild(option);
+  });
+
+  // Set default selection
+  kSelect.value = "16";
+
   toggleButton.addEventListener("click", () => {
     const showClusters = toggleButton.textContent === "Show Clusters";
 

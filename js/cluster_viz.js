@@ -4,7 +4,7 @@ import { CONFIG, calculatePosition } from "./config.js";
 // State for cluster visualization
 export const clusterState = {
   isActive: false,
-  currentK: 6,
+  currentK: 16,
   currentYear: null,
   clusterData: null,
   centroidMeshes: [],
@@ -63,14 +63,32 @@ export function displayClusterSphere(renderer, year, k) {
   clusterState.currentK = k;
 
   // Create spheres for each cluster centroid
-  const geometry = new THREE.SphereGeometry(2.0, 24, 24);
+  const geometry = new THREE.SphereGeometry(1.0, 24, 24); // Reduced from 2.0 to 1.0
 
   clusterData.centroids.forEach((rgb, i) => {
-    // Size based on count
-    const count = clusterData.counts[i];
-    const totalColors = clusterData.total_colors;
-    const percentage = count / totalColors;
-    const sizeScale = Math.max(1.5, Math.pow(percentage, 0.4) * CONFIG.clustering.spheres.sizeMultiplier);
+    // Size based on count (if enabled)
+    let sizeScale;
+    if (CONFIG.clustering.spheres.sizeByCount) {
+      const count = clusterData.counts[i];
+      const totalColors = clusterData.total_colors;
+      const percentage = count / totalColors;
+      const sizePower = CONFIG.clustering.spheres.sizePower || 0.4;
+
+      // Allow much smaller sizes by using a lower base value
+      const calculatedSize = Math.pow(percentage, sizePower) * CONFIG.clustering.spheres.sizeMultiplier;
+
+      // Apply minimum size - now can be much smaller
+      sizeScale = Math.max(
+        CONFIG.clustering.spheres.minSize || 0.2, // Default to 0.2 if not specified
+        calculatedSize
+      );
+    } else {
+      // If size by count is disabled, use the fixed size directly
+      sizeScale = CONFIG.clustering.spheres.sizeMultiplier;
+    }
+
+    // Log size info for debugging
+    console.log(`Cluster ${i}: ${clusterData.counts[i]} colors, size: ${sizeScale.toFixed(2)}`);
 
     // Calculate position in color space
     const position = calculatePosition(rgb);
@@ -163,32 +181,46 @@ export function displayClusterSphere(renderer, year, k) {
       transparent: CONFIG.clustering.spheres.opacity < 1.0,
     });
 
-    // Create sphere mesh
+    // Create sphere mesh with improved sizing
     const mesh = new THREE.Mesh(geometry, material);
     mesh.position.set(position.x, position.y, position.z);
     mesh.scale.set(sizeScale, sizeScale, sizeScale);
 
-    // Calculate perceived brightness
+    // Calculate perceived brightness for outline
     const luminance = (0.299 * rgb[0]) / 255 + (0.587 * rgb[1]) / 255 + (0.114 * rgb[2]) / 255;
-    const isDark = luminance < 0.2;
 
-    // Add outline for dark colors
-    if (isDark && CONFIG.clustering.spheres.materialProperties.outlineForDarkColors) {
-      const outlineGeometry = new THREE.SphereGeometry(2.0, 24, 24);
-      const outlineColor = CONFIG.clustering.spheres.materialProperties.outlineColor || 0x555555;
-      const outlineOpacity = CONFIG.clustering.spheres.materialProperties.outlineOpacity || 0.4;
-      const thickness = CONFIG.clustering.spheres.materialProperties.outlineThickness || 1.06;
+    // Add outline with opacity based on luminance
+    if (CONFIG.clustering.spheres.materialProperties.outlineEnabled) {
+      const matProps = CONFIG.clustering.spheres.materialProperties;
+      const luminanceRange = matProps.outlineLuminanceRange || { min: 0.0, max: 0.3 };
 
-      const outlineMaterial = new THREE.MeshBasicMaterial({
-        color: outlineColor,
-        side: THREE.BackSide,
-        transparent: true,
-        opacity: outlineOpacity,
-      });
+      // Calculate opacity based on luminance
+      let outlineOpacity = 0;
 
-      const outlineMesh = new THREE.Mesh(outlineGeometry, outlineMaterial);
-      outlineMesh.scale.set(thickness, thickness, thickness); // Apply configured thickness
-      mesh.add(outlineMesh);
+      if (luminance <= luminanceRange.min) {
+        // Below min threshold - use max opacity
+        outlineOpacity = matProps.outlineMaxOpacity;
+      } else if (luminance < luminanceRange.max) {
+        // In transition range - linear interpolation
+        const normalizedLuminance = (luminance - luminanceRange.min) / (luminanceRange.max - luminanceRange.min);
+        outlineOpacity = matProps.outlineMaxOpacity * (1 - normalizedLuminance);
+      }
+
+      // Only create outline if there's some opacity
+      if (outlineOpacity > 0.01) {
+        const outlineGeometry = new THREE.SphereGeometry(1.0, 24, 24);
+        const outlineMaterial = new THREE.MeshBasicMaterial({
+          color: matProps.outlineColor || 0x555555,
+          side: THREE.BackSide,
+          transparent: true,
+          opacity: outlineOpacity,
+        });
+
+        const outlineMesh = new THREE.Mesh(outlineGeometry, outlineMaterial);
+        const thickness = matProps.outlineThickness || 1.1;
+        outlineMesh.scale.set(thickness, thickness, thickness);
+        mesh.add(outlineMesh);
+      }
     }
 
     renderer.group.add(mesh);
