@@ -58,7 +58,7 @@ export const CONFIG = {
     spheres: {
       opacity: 1,
       colorIntensity: 1.1,
-      sizeMultiplier: 0.5, // Smaller value for smaller clusters
+      sizeMultiplier: 0.5,
       sizeByCount: true,
       minSize: 0.8,
       sizePower: 0.5,
@@ -68,8 +68,6 @@ export const CONFIG = {
         diffuseIntensity: 0.15,
         ambientIntensity: 0.7,
         darkColorEnhancement: 0.3,
-
-        // Enhanced outline controls
         outlineEnabled: true,
         outlineColor: 0x555555,
         outlineMaxOpacity: 0.5,
@@ -77,7 +75,7 @@ export const CONFIG = {
           min: 0.4,
           max: 0.8,
         },
-        outlineThickness: 1.05, // Outline thickness multiplier
+        outlineThickness: 1.05,
       },
     },
     originalPoints: {
