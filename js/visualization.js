@@ -261,19 +261,6 @@ function animate() {
   // Auto-rotation
   renderer.group.rotation.y += CONFIG.rotationSpeed;
 
-  // Update breathing in shaders
-  if (state.instancedSpheres?.material?.uniforms) {
-    const uniforms = state.instancedSpheres.material.uniforms;
-    uniforms.uTime.value += CONFIG.breathingEffect.speed;
-    uniforms.uBreathingEnabled.value = CONFIG.breathingEffect.enabled ? 1.0 : 0.0;
-  }
-
-  if (state.points?.material?.uniforms) {
-    const uniforms = state.points.material.uniforms;
-    uniforms.uTime.value += CONFIG.breathingEffect.speed;
-    uniforms.uBreathingEnabled.value = CONFIG.breathingEffect.enabled ? 1.0 : 0.0;
-  }
-
   // Render
   renderer.render();
 }

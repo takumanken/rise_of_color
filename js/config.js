@@ -14,17 +14,6 @@ export const CONFIG = {
     randomizeDelay: true,
   },
 
-  breathingEffect: {
-    enabled: false,
-    speed: 0.001,
-    amplitude: 0.01,
-    shellInfluence: 1.0,
-    waveform: "pulse",
-    asynchronous: true,
-    randomOffset: 1,
-    pulseSharpness: 0.5,
-  },
-
   camera: {
     distance: 500,
     initialPosition: [70, 70, 240],
