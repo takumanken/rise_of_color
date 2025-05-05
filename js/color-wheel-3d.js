@@ -840,7 +840,7 @@ function calculatePosition(rgb) {
 // Load the color data
 async function loadData() {
   try {
-    const response = await fetch("unique_colors_history.json");
+    const response = await fetch("download_data/unique_colors_history.json");
     return await response.json();
   } catch (err) {
     console.error("Error loading data:", err);
