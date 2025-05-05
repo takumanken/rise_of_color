@@ -206,17 +206,10 @@ async function initVisualization() {
   state.data = await loadData();
   console.log(`Loaded data for ${state.data.length} years`);
 
-  // Calculate approximately how many spheres we'll need
-  const levels = Math.pow(2, CONFIG.colorDepth);
-  const hueSteps = Math.round(levels * 1.6);
-  const satSteps = Math.round(levels * 0.75);
-  const lightSteps = Math.round(levels * 0.75);
-  const estimatedColors = hueSteps * satSteps * lightSteps;
-
-  // Choose rendering method - comment out one of these
+  const estimatedColors = 800000;
   state.instancedSpheres = renderer.setupShaderInstancedMesh(estimatedColors);
-  state.dummy = dummy;
-  //state.points = renderer.setupPointCloudMesh(estimatedColors); // Alternate option for better performance
+
+  // No need to store dummy in state since it's already accessible in this module
 }
 
 // Start everything
