@@ -57,11 +57,22 @@ export const CONFIG = {
   clustering: {
     spheres: {
       opacity: 1,
-      colorIntensity: 1,
-      sizeMultiplier: 0.1,
+      colorIntensity: 1.1,
+      sizeMultiplier: 0.5,
+      materialProperties: {
+        matte: true,
+        specularIntensity: 0.05,
+        diffuseIntensity: 0.15,
+        ambientIntensity: 0.7,
+        darkColorEnhancement: 0.3,
+        outlineForDarkColors: true,
+        outlineColor: 0x555555,
+        outlineOpacity: 0.25,
+        outlineThickness: 1.03,
+      },
     },
     originalPoints: {
-      opacityWhenClustered: 0.5,
+      opacityWhenClustered: 0.25,
     },
   },
 };
