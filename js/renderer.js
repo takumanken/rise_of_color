@@ -76,10 +76,18 @@ export class Renderer {
 
   setupControls() {
     this.controls = new OrbitControls(this.camera, this.renderer.domElement);
+
+    // Disable zoom completely
+    this.controls.enableZoom = false;
+
+    // Set initial camera position at fixed distance
+    this.camera.position.set(...CONFIG.camera.initialPosition);
+
+    // Other controls settings
     this.controls.enableDamping = true;
     this.controls.dampingFactor = CONFIG.camera.damping;
 
-    // Initial camera animation
+    // Auto-rotation settings remain unchanged
     setTimeout(() => {
       this.controls.autoRotate = true;
       this.controls.autoRotateSpeed = CONFIG.camera.autoRotateSpeed;
@@ -97,6 +105,14 @@ export class Renderer {
     this.camera.aspect = window.innerWidth / window.innerHeight;
     this.camera.updateProjectionMatrix();
     this.renderer.setSize(window.innerWidth, window.innerHeight);
+
+    // Ensure zoom level is maintained after resize
+    if (!CONFIG.camera.zoomControl.enabled) {
+      // Reset camera to the fixed distance
+      const dir = this.camera.position.clone().normalize();
+      const fixedDistance = CONFIG.camera.zoomControl.initialDistance;
+      this.camera.position.set(dir.x * fixedDistance, dir.y * fixedDistance, dir.z * fixedDistance);
+    }
   }
 
   render() {

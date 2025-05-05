@@ -14,6 +14,10 @@ export const CONFIG = {
     autoRotateDuration: 3000,
     damping: 0.05,
     fov: 20,
+    zoomControl: {
+      enabled: false,
+      initialDistance: 280,
+    },
   },
 
   // COLOR PROCESSING
