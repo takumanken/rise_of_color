@@ -20,66 +20,15 @@ const renderer = new Renderer();
 const dummy = new THREE.Object3D();
 
 // --- UI Elements --------------------------------------------------------------
-// Create UI elements
-function createUI() {
-  // Year display
-  const yearDisplay = document.createElement("div");
-  yearDisplay.style.position = "absolute";
-  yearDisplay.style.top = "50px";
-  yearDisplay.style.width = "100%";
-  yearDisplay.style.textAlign = "center";
-  yearDisplay.style.fontSize = "2.4rem";
-  yearDisplay.style.fontWeight = "900";
-  yearDisplay.innerHTML = "–";
-  document.body.appendChild(yearDisplay);
-  state.yearDisplay = yearDisplay;
-
-  // Stats container
-  const statsContainer = document.createElement("div");
-  statsContainer.style.position = "absolute";
-  statsContainer.style.top = "110px";
-  statsContainer.style.width = "100%";
-  statsContainer.style.textAlign = "center";
-  statsContainer.style.fontSize = "1rem";
-  statsContainer.innerHTML =
-    '<span id="total-colors">0</span> Total Colors | <span id="year-colors">0</span> New This Year';
-  document.body.appendChild(statsContainer);
-
-  // Progress bar
-  const progressBar = document.createElement("div");
-  progressBar.style.position = "absolute";
-  progressBar.style.bottom = "20px";
-  progressBar.style.left = "50%";
-  progressBar.style.transform = "translateX(-50%)";
-  progressBar.style.width = "80%";
-  progressBar.style.maxWidth = "800px";
-  progressBar.style.height = "4px";
-  progressBar.style.background = "rgba(255,255,255,0.2)";
-  progressBar.style.borderRadius = "2px";
-  progressBar.style.overflow = "hidden";
-
-  const progressFill = document.createElement("div");
-  progressFill.style.height = "100%";
-  progressFill.style.width = "0%";
-  progressFill.style.background = "linear-gradient(to right, #ff3e9d, #0ff0fc)";
-  progressFill.style.transition = "width 0.3s ease";
-  progressBar.appendChild(progressFill);
-  document.body.appendChild(progressBar);
-  state.progressFill = progressFill;
-
-  // Play/pause button
-  const playButton = document.createElement("button");
-  playButton.id = "play-pause";
-  playButton.textContent = "Start";
-  playButton.style.position = "absolute";
-  playButton.style.bottom = "40px";
-  playButton.style.left = "50%";
-  playButton.style.transform = "translateX(-50%)";
-  document.body.appendChild(playButton);
-  state.playButton = playButton;
+// Set up UI elements that now exist in the HTML
+function setupUI() {
+  // Get references to DOM elements
+  state.yearDisplay = document.getElementById("year-display");
+  state.progressFill = document.getElementById("progress-fill");
+  state.playButton = document.getElementById("play-pause");
 
   // Event listeners
-  playButton.addEventListener("click", () => {
+  state.playButton.addEventListener("click", () => {
     if (!state.playing) {
       if (state.i >= state.data.length - 1) {
         reset();
@@ -272,7 +221,7 @@ async function initVisualization() {
 
 // Start everything
 (async function init() {
-  createUI();
+  setupUI();
   await initVisualization();
   animate();
 })();

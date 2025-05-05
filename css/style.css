@@ -1,8 +1,91 @@
-    /** Basic full‑screen canvas setup */
-    html, body {
-      margin: 0;
-      height: 100%;
-      overflow: hidden;
-      background: #111;
-    }
-    canvas { display: block; }
+/* Basic page styling */
+body {
+  margin: 0;
+  overflow: hidden;
+  background-color: #000;
+  color: white;
+  font-family: Arial, sans-serif;
+}
+
+/* Info panel in the bottom left */
+.info {
+  position: absolute;
+  bottom: 20px;
+  left: 20px;
+  background: rgba(0,0,0,0.7);
+  padding: 10px;
+  border-radius: 5px;
+}
+
+/* Controls panel - keeping for reference though not currently used */
+.controls {
+  position: absolute;
+  top: 20px;
+  right: 20px;
+  background: rgba(0,0,0,0.7);
+  padding: 10px;
+  border-radius: 5px;
+}
+
+/* Button styling */
+button {
+  background: rgba(255,255,255,0.2);
+  color: white;
+  border: none;
+  padding: 8px 12px;
+  margin: 5px;
+  cursor: pointer;
+  border-radius: 4px;
+}
+
+button:hover {
+  background: rgba(255,255,255,0.3);
+}
+
+/* Year display at the top */
+#year-display {
+  position: absolute;
+  top: 50px;
+  width: 100%;
+  text-align: center;
+  font-size: 2.4rem;
+  font-weight: 900;
+}
+
+/* Stats container below year display */
+#stats-container {
+  position: absolute;
+  top: 110px;
+  width: 100%;
+  text-align: center;
+  font-size: 1rem;
+}
+
+/* Progress bar at the bottom */
+#progress-bar {
+  position: absolute;
+  bottom: 20px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 80%;
+  max-width: 800px;
+  height: 4px;
+  background: rgba(255,255,255,0.2);
+  border-radius: 2px;
+  overflow: hidden;
+}
+
+#progress-fill {
+  height: 100%;
+  width: 0%;
+  background: linear-gradient(to right, #ff3e9d, #0ff0fc);
+  transition: width 0.3s ease;
+}
+
+/* Play/pause button at the bottom */
+#play-pause {
+  position: absolute;
+  bottom: 40px;
+  left: 50%;
+  transform: translateX(-50%);
+}
