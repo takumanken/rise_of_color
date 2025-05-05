@@ -22,13 +22,13 @@ export const CONFIG = {
   },
 
   // COLOR PROCESSING
-  grayscaleThreshold: 0.05,
+  grayscaleThreshold: 0.025,
   colorDepth: 7,
 
   // LIGHTING
   lighting: {
     ambient: {
-      intensity: 1.8,
+      intensity: 10,
       color: 0xffffff,
     },
   },
@@ -37,10 +37,10 @@ export const CONFIG = {
   pointAppearance: {
     baseSize: 200,
     saturationInfluence: 1,
-    minSize: 0.8,
-    maxSize: 1.2,
+    minSize: 1,
+    maxSize: 1,
     shader: {
-      ambientIntensity: 1.7,
+      ambientIntensity: 1,
     },
   },
 
