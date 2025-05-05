@@ -69,15 +69,18 @@ export function displayClusterSphere(renderer, year, k) {
     // Size based on count
     const count = clusterData.counts[i];
     const totalColors = clusterData.total_colors;
-    const sizeScale = (count / totalColors) * 5;
+    const percentage = count / totalColors;
+    const sizeScale = Math.max(1.5, Math.pow(percentage, 0.4) * CONFIG.clustering.spheres.sizeMultiplier);
 
     // Calculate position in color space
     const position = calculatePosition(rgb);
 
-    // Create colorful material with custom shader for consistent colors
+    // Create colorful material with custom shader
     const material = new THREE.ShaderMaterial({
       uniforms: {
         color: { value: new THREE.Color(rgb[0] / 255, rgb[1] / 255, rgb[2] / 255) },
+        colorIntensity: { value: CONFIG.clustering.spheres.colorIntensity },
+        opacity: { value: CONFIG.clustering.spheres.opacity },
       },
       vertexShader: `
         varying vec3 vNormal;
@@ -88,31 +91,22 @@ export function displayClusterSphere(renderer, year, k) {
       `,
       fragmentShader: `
         uniform vec3 color;
+        uniform float colorIntensity;
+        uniform float opacity;
         varying vec3 vNormal;
         void main() {
           float intensity = 0.8 + 0.4 * dot(vNormal, vec3(0.0, 1.0, 0.0));
-          vec3 finalColor = color * intensity;
-          gl_FragColor = vec4(finalColor, 1.0);
+          vec3 finalColor = color * colorIntensity * intensity;
+          gl_FragColor = vec4(finalColor, opacity);
         }
       `,
+      transparent: CONFIG.clustering.spheres.opacity < 1.0,
     });
 
     // Create sphere mesh
     const mesh = new THREE.Mesh(geometry, material);
     mesh.position.set(position.x, position.y, position.z);
     mesh.scale.set(sizeScale, sizeScale, sizeScale);
-
-    // Add outline for better visibility
-    const outlineMaterial = new THREE.MeshBasicMaterial({
-      color: 0x000000,
-      side: THREE.BackSide,
-      transparent: true,
-      opacity: 0.3,
-    });
-
-    const outlineMesh = new THREE.Mesh(geometry, outlineMaterial);
-    outlineMesh.scale.set(1.05, 1.05, 1.05);
-    mesh.add(outlineMesh);
 
     renderer.group.add(mesh);
     clusterState.centroidMeshes.push(mesh);
@@ -134,30 +128,21 @@ function clearClusterVisualization(renderer) {
 }
 
 // Toggle between showing all points and just clusters
-export function toggleClusterView(renderer, showClusters, year, k) {
+export function toggleClusterView(renderer, showClusters, year, k, instancedSpheres) {
   if (showClusters) {
-    // Hide the point cloud visualization
-    if (renderer.instancedSpheres) {
-      renderer.instancedSpheres.visible = false;
-    } else if (renderer.group && renderer.group.children) {
-      renderer.group.children.forEach((child) => {
-        if (child.type === "InstancedMesh") {
-          child.visible = false;
-        }
-      });
+    // Make original points semi-transparent
+    if (instancedSpheres && instancedSpheres.material && instancedSpheres.material.uniforms) {
+      instancedSpheres.material.uniforms.opacity.value = CONFIG.clustering.originalPoints.opacityWhenClustered;
+      instancedSpheres.material.transparent = true;
+      instancedSpheres.material.needsUpdate = true;
     }
 
     displayClusterSphere(renderer, year, k);
   } else {
-    // Show point cloud visualization again
-    if (renderer.instancedSpheres) {
-      renderer.instancedSpheres.visible = true;
-    } else if (renderer.group && renderer.group.children) {
-      renderer.group.children.forEach((child) => {
-        if (child.type === "InstancedMesh") {
-          child.visible = true;
-        }
-      });
+    // Restore original opacity
+    if (instancedSpheres && instancedSpheres.material && instancedSpheres.material.uniforms) {
+      instancedSpheres.material.uniforms.opacity.value = 1.0;
+      instancedSpheres.material.needsUpdate = true;
     }
 
     clearClusterVisualization(renderer);

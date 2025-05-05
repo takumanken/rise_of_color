@@ -167,7 +167,7 @@ function step() {
 
   // Update clusters if they're being displayed
   if (clusterState.isActive) {
-    toggleClusterView(renderer, true, yearData.year, clusterState.currentK);
+    toggleClusterView(renderer, true, yearData.year, clusterState.currentK, state.instancedSpheres);
   }
 }
 
@@ -187,7 +187,8 @@ async function initVisualization() {
   state.instancedSpheres = renderer.setupShaderInstancedMesh(estimatedColors);
 }
 
-// Add this function to setup cluster controls
+// Update the setupClusterControls function to pass state.instancedSpheres directly:
+
 function setupClusterControls() {
   const toggleButton = document.getElementById("toggle-clusters");
   const kSelect = document.getElementById("cluster-k");
@@ -199,27 +200,21 @@ function setupClusterControls() {
       toggleButton.textContent = "Show All Colors";
       kSelect.style.display = "inline-block";
 
-      // Make sure to access the correct renderer
-      // If it's a global variable or stored in state:
-      toggleClusterView(
-        renderer, // Make sure this is the renderer that has instancedSpheres
-        true,
-        state.data[state.i].year,
-        parseInt(kSelect.value)
-      );
+      // Pass instancedSpheres directly
+      toggleClusterView(renderer, true, state.data[state.i].year, parseInt(kSelect.value), state.instancedSpheres);
     } else {
       toggleButton.textContent = "Show Clusters";
       kSelect.style.display = "none";
 
       // Back to normal view
-      toggleClusterView(renderer, false);
+      toggleClusterView(renderer, false, null, null, state.instancedSpheres);
     }
   });
 
   // Handle K value changes
   kSelect.addEventListener("change", () => {
     if (clusterState.isActive) {
-      toggleClusterView(renderer, true, state.data[state.i].year, parseInt(kSelect.value));
+      toggleClusterView(renderer, true, state.data[state.i].year, parseInt(kSelect.value), state.instancedSpheres);
     }
   });
 }

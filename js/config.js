@@ -52,6 +52,18 @@ export const CONFIG = {
     phiStrength: 1.5,
     radialJitter: 1,
   },
+
+  // CLUSTERING VISUALIZATION
+  clustering: {
+    spheres: {
+      opacity: 1,
+      colorIntensity: 1,
+      sizeMultiplier: 0.1,
+    },
+    originalPoints: {
+      opacityWhenClustered: 0.5,
+    },
+  },
 };
 
 // COLOR CONVERSION FUNCTIONS

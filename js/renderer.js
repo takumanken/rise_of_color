@@ -22,13 +22,14 @@ const INSTANCE_VERTEX_SHADER = `
 `;
 
 const INSTANCE_FRAGMENT_SHADER = (config) => `
+  uniform float opacity;  // Add opacity uniform
   varying vec3 vColor;
   varying vec3 vNormal;
 
   void main() {
     // Just use original color with minimal spherical shading
     vec3 finalColor = vColor * ${config.pointAppearance.shader.ambientIntensity.toFixed(2)};
-    gl_FragColor = vec4(finalColor, 1.0);
+    gl_FragColor = vec4(finalColor, opacity);  // Use the opacity uniform
   }
 `;
 
@@ -147,10 +148,14 @@ export class Renderer {
     baseGeometry.setAttribute("iScale", new THREE.InstancedBufferAttribute(scaleArray, 1));
     baseGeometry.setAttribute("instanceColor", new THREE.InstancedBufferAttribute(colorArray, 3));
 
-    // Create shader material
+    // Create shader material with opacity uniform
     const material = new THREE.ShaderMaterial({
       vertexShader: INSTANCE_VERTEX_SHADER,
       fragmentShader: INSTANCE_FRAGMENT_SHADER(CONFIG),
+      uniforms: {
+        opacity: { value: 1.0 }, // Add opacity uniform
+      },
+      transparent: true,
     });
 
     // Create the instanced mesh
