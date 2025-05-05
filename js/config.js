@@ -28,7 +28,7 @@ export const CONFIG = {
   // LIGHTING
   lighting: {
     ambient: {
-      intensity: 10,
+      intensity: 1,
       color: 0xffffff,
     },
   },
