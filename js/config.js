@@ -4,7 +4,7 @@ export const CONFIG = {
   radius: 40,
   smallSphereRadius: 0.05,
   shells: 50,
-  rotationSpeed: 0.0025,
+  rotationSpeed: 0.0015,
   animationSpeed: 200,
 
   // CAMERA
