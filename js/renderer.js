@@ -4,6 +4,49 @@ import { EffectComposer } from "three/examples/jsm/postprocessing/EffectComposer
 import { RenderPass } from "three/examples/jsm/postprocessing/RenderPass.js";
 import { CONFIG } from "./config.js";
 
+// Extract shader code as constants
+const INSTANCE_VERTEX_SHADER = `
+  attribute vec3 instanceColor;
+  attribute vec3 iPosition;
+  attribute float iScale;
+  attribute float iShell;
+
+  uniform float uShellCount;
+
+  varying vec3 vColor;
+  varying vec3 vNormal;
+
+  void main() {
+    vColor = instanceColor;
+    vNormal = normal;
+
+    vec3 scaledPosition = position * iScale;
+
+    vec4 mvPosition = modelViewMatrix * vec4(iPosition + scaledPosition, 1.0);
+    gl_Position = projectionMatrix * mvPosition;
+  }
+`;
+
+const INSTANCE_FRAGMENT_SHADER = (config) => `
+  varying vec3 vColor;
+  varying vec3 vNormal;
+
+  void main() {
+    vec3 light = normalize(vec3(0.5, 0.8, 0.5));
+    float diffuse = max(dot(vNormal, light), 0.0);
+
+    vec3 viewDir = normalize(vec3(0.0, 0.0, 1.0));
+    float rim = pow(1.0 - abs(dot(vNormal, viewDir)), ${config.pointAppearance.shader.rimFalloff.toFixed(1)});
+
+    vec3 finalColor = vColor * (${config.pointAppearance.shader.ambientIntensity.toFixed(2)} + 
+                                ${config.pointAppearance.shader.diffuseIntensity.toFixed(2)} * diffuse);
+
+    finalColor = mix(finalColor, vec3(1.0), rim * ${config.pointAppearance.shader.rimIntensity.toFixed(2)});
+
+    gl_FragColor = vec4(finalColor, 1.0);
+  }
+`;
+
 export class Renderer {
   constructor() {
     this.scene = new THREE.Scene();
@@ -109,46 +152,8 @@ export class Renderer {
       uniforms: {
         uShellCount: { value: CONFIG.shells },
       },
-      vertexShader: `
-        attribute vec3 instanceColor;
-        attribute vec3 iPosition;
-        attribute float iScale;
-        attribute float iShell;
-
-        uniform float uShellCount;
-
-        varying vec3 vColor;
-        varying vec3 vNormal;
-
-        void main() {
-          vColor = instanceColor;
-          vNormal = normal;
-
-          vec3 scaledPosition = position * iScale;
-
-          vec4 mvPosition = modelViewMatrix * vec4(iPosition + scaledPosition, 1.0);
-          gl_Position = projectionMatrix * mvPosition;
-        }
-      `,
-      fragmentShader: `
-        varying vec3 vColor;
-        varying vec3 vNormal;
-
-        void main() {
-          vec3 light = normalize(vec3(0.5, 0.8, 0.5));
-          float diffuse = max(dot(vNormal, light), 0.0);
-
-          vec3 viewDir = normalize(vec3(0.0, 0.0, 1.0));
-          float rim = pow(1.0 - abs(dot(vNormal, viewDir)), ${CONFIG.pointAppearance.shader.rimFalloff.toFixed(1)});
-
-          vec3 finalColor = vColor * (${CONFIG.pointAppearance.shader.ambientIntensity.toFixed(2)} + 
-                                      ${CONFIG.pointAppearance.shader.diffuseIntensity.toFixed(2)} * diffuse);
-
-          finalColor = mix(finalColor, vec3(1.0), rim * ${CONFIG.pointAppearance.shader.rimIntensity.toFixed(2)});
-
-          gl_FragColor = vec4(finalColor, 1.0);
-        }
-      `,
+      vertexShader: INSTANCE_VERTEX_SHADER,
+      fragmentShader: INSTANCE_FRAGMENT_SHADER(CONFIG),
     });
 
     const spheres = new THREE.InstancedMesh(baseGeometry, material, estimatedCount);
