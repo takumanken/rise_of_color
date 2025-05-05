@@ -14,13 +14,11 @@ const state = {
   instanceCount: 0, // Track instance count
 };
 
-// Create renderer
+// Create renderer and dummy for instanced mesh
 const renderer = new Renderer();
-// Create dummy for instanced mesh
 const dummy = new THREE.Object3D();
 
-// --- UI Elements --------------------------------------------------------------
-// Set up UI elements that now exist in the HTML
+// ----- UI SETUP -----------------------------------------------------
 function setupUI() {
   // Get references to DOM elements
   state.yearDisplay = document.getElementById("year-display");
@@ -40,8 +38,7 @@ function setupUI() {
   });
 }
 
-// --- Data Loading & Processing --------------------------------------------------------------
-// Load the color data
+// ----- DATA HANDLING ------------------------------------------------
 async function loadData() {
   try {
     const response = await fetch("download_data/unique_colors_history.json");
@@ -52,29 +49,22 @@ async function loadData() {
   }
 }
 
-// Process year data
 function processYear(yearData) {
   const yearColors = [];
   const colors = yearData.color || [];
 
   for (const rgb of colors) {
-    // Only using RGB quantization now
+    // Quantize and create a unique key
     const quantizedRgb = quantizeColor(rgb);
-
     const key = quantizedRgb.join(",");
 
     // Only add if we haven't seen this color before
     if (!state.seen.has(key)) {
       state.seen.add(key);
-
-      // Calculate position and properties
       const position = calculatePosition(quantizedRgb);
 
-      // Add to year data and global state
       yearColors.push(position);
       state.colorData.push(position);
-
-      // Update counter
       state.totalSpheres++;
     }
   }
@@ -82,68 +72,56 @@ function processYear(yearData) {
   return yearColors;
 }
 
-// Add processed colors to instanced mesh
 function addYearColors(yearColors) {
   const spheres = state.instancedSpheres;
 
-  // Get attributes directly
+  // Get attributes
   const positionAttr = spheres.geometry.getAttribute("iPosition");
   const scaleAttr = spheres.geometry.getAttribute("iScale");
-  const shellAttr = spheres.geometry.getAttribute("iShell");
   const colorAttr = spheres.geometry.getAttribute("instanceColor");
 
-  // Set dummy identity matrices (will be ignored, positions come from attributes)
+  // Prepare dummy object for matrix
   dummy.position.set(0, 0, 0);
   dummy.scale.set(1, 1, 1);
   dummy.updateMatrix();
 
   yearColors.forEach((colorData) => {
-    // Store original position in attribute
+    // Position
     positionAttr.setXYZ(state.instanceCount, colorData.x, colorData.y, colorData.z);
 
-    // Store scale in attribute
+    // Scale based on color saturation
     const dotScale = 0.8 + colorData.c * 0.4;
     scaleAttr.setX(state.instanceCount, dotScale);
 
-    // Store shell in attribute
-    shellAttr.setX(state.instanceCount, colorData.shell);
-
-    // Store color in attribute
+    // Color
     colorAttr.setXYZ(state.instanceCount, colorData.rgb[0] / 255, colorData.rgb[1] / 255, colorData.rgb[2] / 255);
 
-    // Set static identity matrix
+    // Matrix
     spheres.setMatrixAt(state.instanceCount, dummy.matrix);
-
     state.instanceCount++;
   });
 
-  // Update the count
+  // Update buffers
   spheres.count = state.instanceCount;
-
-  // Mark all attributes for update (one time only)
   positionAttr.needsUpdate = true;
   scaleAttr.needsUpdate = true;
-  shellAttr.needsUpdate = true;
   colorAttr.needsUpdate = true;
   spheres.instanceMatrix.needsUpdate = true;
 }
 
-// --- Animation & Control Functions --------------------------------------------------------------
-// Play animation
+// ----- ANIMATION CONTROL --------------------------------------------
 function play() {
   state.playing = true;
   state.playButton.textContent = "Pause";
   state.timer = setInterval(step, CONFIG.animationSpeed);
 }
 
-// Pause animation
 function pause() {
   state.playing = false;
   state.playButton.textContent = "Resume";
   clearInterval(state.timer);
 }
 
-// Reset visualization
 function reset() {
   pause();
   state.i = -1;
@@ -164,11 +142,10 @@ function reset() {
   state.progressFill.style.width = "0%";
   state.playButton.textContent = "Start";
 
-  // Recreate visualization with fresh settings
+  // Recreate visualization
   initVisualization();
 }
 
-// Advance to next year
 function step() {
   if (state.i >= state.data.length - 1) {
     pause();
@@ -190,26 +167,20 @@ function step() {
   addYearColors(yearColors);
 }
 
-// Animation loop
 function animate() {
   requestAnimationFrame(animate);
-
-  // Auto-rotation
   renderer.group.rotation.y += CONFIG.rotationSpeed;
-
-  // Render
   renderer.render();
 }
 
-// --- Initialization --------------------------------------------------------------
+// ----- INITIALIZATION ----------------------------------------------
 async function initVisualization() {
   state.data = await loadData();
   console.log(`Loaded data for ${state.data.length} years`);
 
-  const estimatedColors = 800000;
+  // Create mesh with reasonable capacity estimate
+  const estimatedColors = 2000000;
   state.instancedSpheres = renderer.setupShaderInstancedMesh(estimatedColors);
-
-  // No need to store dummy in state since it's already accessible in this module
 }
 
 // Start everything

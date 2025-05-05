@@ -20,7 +20,7 @@ export const CONFIG = {
   grayscaleThreshold: 0.05,
   colorDepth: 7,
 
-  // LIGHTING - simplified to just ambient
+  // LIGHTING
   lighting: {
     ambient: {
       intensity: 1.8,
@@ -39,7 +39,7 @@ export const CONFIG = {
     },
   },
 
-  // POSITION JITTERING - creates natural distribution
+  // POSITION JITTERING
   jitter: {
     enabled: true,
     intensity: 10.0,
@@ -54,17 +54,17 @@ export function rgbToHsl(r, g, b) {
   r /= 255;
   g /= 255;
   b /= 255;
-  const max = Math.max(r, g, b),
-    min = Math.min(r, g, b);
-  let h,
-    s,
-    l = (max + min) / 2;
+  const max = Math.max(r, g, b);
+  const min = Math.min(r, g, b);
+  let h, s;
+  const l = (max + min) / 2;
 
   if (max === min) {
     h = s = 0; // grayscale
   } else {
     const d = max - min;
     s = l > 0.5 ? d / (2 - max - min) : d / (max + min);
+
     switch (max) {
       case r:
         h = (g - b) / d + (g < b ? 6 : 0);
@@ -124,40 +124,26 @@ export function quantizeColor(rgb) {
 // POSITION CALCULATION
 export function calculatePosition(rgb) {
   const [h, s, l] = rgbToHsl(...rgb);
-
-  // Check if this is a grayscale color (saturation below threshold)
   const isGrayscale = s < CONFIG.grayscaleThreshold;
-
-  // Calculate chroma (for scaling and visual importance)
   const c = (1 - Math.abs(2 * l - 1)) * s;
-
   const R = CONFIG.radius;
 
   // Apply jitter for natural distribution
-  let jitter, thetaJitter, phiJitter, radialJitter;
-  if (CONFIG.jitter.enabled) {
-    // Base jitter amount calculated from color depth
-    jitter = (1.0 / (Math.pow(2, CONFIG.colorDepth) * 1.6)) * CONFIG.jitter.intensity;
+  let thetaJitter = 0,
+    phiJitter = 0,
+    radialJitter = 1.0;
 
-    // Apply configured strengths to different dimensions
+  if (CONFIG.jitter.enabled) {
+    const jitter = (1.0 / (Math.pow(2, CONFIG.colorDepth) * 1.6)) * CONFIG.jitter.intensity;
     thetaJitter = (Math.random() - 0.5) * jitter * CONFIG.jitter.thetaStrength;
     phiJitter = (Math.random() - 0.5) * jitter * CONFIG.jitter.phiStrength;
-
-    // Optional radial jitter
     radialJitter =
       CONFIG.jitter.radialJitter > 0 ? 1.0 + (Math.random() - 0.5) * CONFIG.jitter.radialJitter * 0.2 : 1.0;
-  } else {
-    thetaJitter = phiJitter = 0;
-    radialJitter = 1.0;
   }
 
   // Calculate spherical coordinates with jitter
-  let theta;
-  if (isGrayscale) {
-    theta = greyAngle(rgb) + thetaJitter;
-  } else {
-    theta = 2 * Math.PI * h + thetaJitter;
-  }
+  const theta = isGrayscale ? greyAngle(rgb) + thetaJitter : 2 * Math.PI * h + thetaJitter;
+
   const phi = (1 - l) * Math.PI + phiJitter;
 
   // Convert to Cartesian coordinates
@@ -168,7 +154,7 @@ export function calculatePosition(rgb) {
   const z = r * Math.sin(theta);
   const y = R * Math.cos(phi);
 
-  // Calculate shell number (for point sizing)
+  // Calculate shell number for point sizing
   const shell = Math.floor((1 - s) * CONFIG.shells);
 
   return { x, y, z, shell, h, s, l, c, r, phi, theta, rgb, isGrayscale };
