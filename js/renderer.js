@@ -86,14 +86,9 @@ export class Renderer {
   }
 
   setupLighting() {
-    // Ambient light only
-    const ambientLight = new THREE.AmbientLight(
-      CONFIG.visualEffects.lighting.ambient.color,
-      CONFIG.visualEffects.lighting.ambient.intensity
-    );
+    // Ambient light only - for uniform brightness
+    const ambientLight = new THREE.AmbientLight(CONFIG.lighting.ambient.color, CONFIG.lighting.ambient.intensity);
     this.scene.add(ambientLight);
-
-    // Both main and rim lights removed
   }
 
   handleResize() {

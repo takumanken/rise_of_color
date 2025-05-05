@@ -7,6 +7,7 @@ export const CONFIG = {
   rotationSpeed: 0.001,
   animationSpeed: 50,
 
+  // CAMERA
   camera: {
     initialPosition: [70, 70, 240],
     autoRotateSpeed: 0.5,
@@ -15,40 +16,30 @@ export const CONFIG = {
     fov: 20,
   },
 
+  // COLOR PROCESSING
   grayscaleThreshold: 0.05,
   colorDepth: 7,
 
-  // Simplified lighting section - main light removed
-  visualEffects: {
-    lighting: {
-      ambient: {
-        intensity: 1.8, // Increased for more uniform brightness
-        color: 0xffffff,
-      },
-      // main light removed
-      rim: {
-        intensity: 0, // Keep at 0 to avoid distorting colors
-        color: 0xffffff,
-        position: [-1, 0.5, -1],
-      },
+  // LIGHTING - simplified to just ambient
+  lighting: {
+    ambient: {
+      intensity: 1.8,
+      color: 0xffffff,
     },
   },
 
+  // APPEARANCE
   pointAppearance: {
     baseSize: 200,
     saturationInfluence: 1,
     minSize: 0.8,
     maxSize: 1.2,
     shader: {
-      rimIntensity: 0.2, // Reduced significantly
-      rimFalloff: 5,
-      edgeDarkening: 0.1, // Nearly eliminated
-      edgeThreshold: 1,
-      diffuseIntensity: 0.3, // Reduced significantly
-      ambientIntensity: 1.7, // Increased to dominate the lighting
+      ambientIntensity: 1.7,
     },
   },
 
+  // POSITION JITTERING - creates natural distribution
   jitter: {
     enabled: true,
     intensity: 10.0,
@@ -58,7 +49,7 @@ export const CONFIG = {
   },
 };
 
-// Color conversion and utility functions
+// COLOR CONVERSION FUNCTIONS
 export function rgbToHsl(r, g, b) {
   r /= 255;
   g /= 255;
@@ -115,6 +106,7 @@ export function hslToRgb(h, s, l) {
   return [Math.round(r * 255), Math.round(g * 255), Math.round(b * 255)];
 }
 
+// UTILITY FUNCTIONS
 export function greyAngle(rgb) {
   const hash = (rgb[0] * 31 + rgb[1] * 17 + rgb[2] * 7) % 360;
   return (hash / 360) * Math.PI * 2;
@@ -129,6 +121,7 @@ export function quantizeColor(rgb) {
   ];
 }
 
+// POSITION CALCULATION
 export function calculatePosition(rgb) {
   const [h, s, l] = rgbToHsl(...rgb);
 
@@ -140,8 +133,8 @@ export function calculatePosition(rgb) {
 
   const R = CONFIG.radius;
 
+  // Apply jitter for natural distribution
   let jitter, thetaJitter, phiJitter, radialJitter;
-
   if (CONFIG.jitter.enabled) {
     // Base jitter amount calculated from color depth
     jitter = (1.0 / (Math.pow(2, CONFIG.colorDepth) * 1.6)) * CONFIG.jitter.intensity;
@@ -158,7 +151,7 @@ export function calculatePosition(rgb) {
     radialJitter = 1.0;
   }
 
-  // Apply jitter to angular coordinates
+  // Calculate spherical coordinates with jitter
   let theta;
   if (isGrayscale) {
     theta = greyAngle(rgb) + thetaJitter;
@@ -167,16 +160,15 @@ export function calculatePosition(rgb) {
   }
   const phi = (1 - l) * Math.PI + phiJitter;
 
-  // Calculate Cartesian coordinates
+  // Convert to Cartesian coordinates
   const rMax = R * Math.sin(phi);
-  // Apply radial jitter to radius
   const r = (isGrayscale ? 0.1 * rMax : s * rMax) * radialJitter;
 
   const x = r * Math.cos(theta);
   const z = r * Math.sin(theta);
   const y = R * Math.cos(phi);
 
-  // Calculate shell number (still needed for point sizing)
+  // Calculate shell number (for point sizing)
   const shell = Math.floor((1 - s) * CONFIG.shells);
 
   return { x, y, z, shell, h, s, l, c, r, phi, theta, rgb, isGrayscale };
