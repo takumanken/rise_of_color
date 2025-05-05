@@ -1,5 +1,5 @@
 import * as THREE from "three";
-import { CONFIG, quantizeColorHSL, quantizeColor, calculatePosition, rgbToHsl } from "./config.js";
+import { CONFIG, quantizeColor, calculatePosition, rgbToHsl } from "./config.js";
 import { Renderer } from "./renderer.js";
 
 // Application State
@@ -58,8 +58,8 @@ function processYear(yearData) {
   const colors = yearData.color || [];
 
   for (const rgb of colors) {
-    // Quantize using either RGB or HSL method
-    const quantizedRgb = CONFIG.useHSLQuantization ? quantizeColorHSL(rgb) : quantizeColor(rgb);
+    // Only using RGB quantization now
+    const quantizedRgb = quantizeColor(rgb);
 
     const key = quantizedRgb.join(",");
 

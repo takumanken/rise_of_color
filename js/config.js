@@ -8,7 +8,7 @@ export const CONFIG = {
   animationSpeed: 200,
 
   camera: {
-    distance: 500,
+    // distance removed (unused)
     initialPosition: [70, 70, 240],
     autoRotateSpeed: 0.5,
     autoRotateDuration: 3000,
@@ -55,13 +55,7 @@ export const CONFIG = {
     },
   },
 
-  shininess: 100,
-  specular: 0x888888,
-  emissiveIntensity: 0.3,
-  opacity: {
-    base: 1,
-    saturatedBoost: 0.5,
-  },
+  // Removed: shininess, specular, emissiveIntensity, opacity
 
   jitter: {
     enabled: true,
@@ -143,38 +137,6 @@ export function quantizeColor(rgb) {
   ];
 }
 
-export function quantizeColorHSL(rgb) {
-  // Convert to HSL first
-  const [h, s, l] = rgbToHsl(...rgb);
-
-  // Calculate quantization levels based on colorDepth
-  const levels = Math.pow(2, CONFIG.colorDepth);
-
-  // Golden ratio approach to distribute points evenly on sphere
-  const hueSteps = Math.round(levels * 1.6); // More hue steps (around circumference)
-  const satSteps = Math.round(levels * 0.75); // Fewer saturation steps (radius)
-  const lightSteps = Math.round(levels * 0.75); // Fewer lightness steps (height)
-
-  // Add a tiny random offset to prevent perfect layers
-  const jitter = 1 / levels;
-  const hRand = (Math.random() - 0.5) * jitter;
-  const sRand = (Math.random() - 0.5) * jitter;
-  const lRand = (Math.random() - 0.5) * jitter;
-
-  // Quantize with slight randomness to break up layers
-  let hQ = Math.round((h + hRand) * hueSteps) / hueSteps;
-  let sQ = Math.round((s + sRand) * satSteps) / satSteps;
-  let lQ = Math.round((l + lRand) * lightSteps) / lightSteps;
-
-  // Keep values in valid range
-  hQ = Math.max(0, Math.min(1, hQ));
-  sQ = Math.max(0, Math.min(1, sQ));
-  lQ = Math.max(0, Math.min(1, lQ));
-
-  // Convert back to RGB for storage/comparison
-  return hslToRgb(hQ, sQ, lQ);
-}
-
 export function calculatePosition(rgb) {
   const [h, s, l] = rgbToHsl(...rgb);
 
@@ -222,7 +184,7 @@ export function calculatePosition(rgb) {
   const z = r * Math.sin(theta);
   const y = R * Math.cos(phi);
 
-  // Calculate shell number (for breathing and visual effects)
+  // Calculate shell number (still needed for point sizing)
   const shell = Math.floor((1 - s) * CONFIG.shells);
 
   return { x, y, z, shell, h, s, l, c, r, phi, theta, rgb, isGrayscale };
