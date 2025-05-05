@@ -1,6 +1,7 @@
 import * as THREE from "three";
 import { CONFIG, quantizeColor, calculatePosition, rgbToHsl } from "./config.js";
 import { Renderer } from "./renderer.js";
+import { loadClusterData, toggleClusterView, clusterState } from "./cluster_viz.js";
 
 // Application State
 const state = {
@@ -163,6 +164,11 @@ function step() {
 
   // Add spheres
   addYearColors(yearColors);
+
+  // Update clusters if they're being displayed
+  if (clusterState.isActive) {
+    toggleClusterView(renderer, true, yearData.year, clusterState.currentK);
+  }
 }
 
 function animate() {
@@ -181,9 +187,57 @@ async function initVisualization() {
   state.instancedSpheres = renderer.setupShaderInstancedMesh(estimatedColors);
 }
 
+// Add this function to setup cluster controls
+function setupClusterControls() {
+  const toggleButton = document.getElementById("toggle-clusters");
+  const kSelect = document.getElementById("cluster-k");
+
+  toggleButton.addEventListener("click", () => {
+    const showClusters = toggleButton.textContent === "Show Clusters";
+
+    if (showClusters) {
+      toggleButton.textContent = "Show All Colors";
+      kSelect.style.display = "inline-block";
+
+      // Make sure to access the correct renderer
+      // If it's a global variable or stored in state:
+      toggleClusterView(
+        renderer, // Make sure this is the renderer that has instancedSpheres
+        true,
+        state.data[state.i].year,
+        parseInt(kSelect.value)
+      );
+    } else {
+      toggleButton.textContent = "Show Clusters";
+      kSelect.style.display = "none";
+
+      // Back to normal view
+      toggleClusterView(renderer, false);
+    }
+  });
+
+  // Handle K value changes
+  kSelect.addEventListener("change", () => {
+    if (clusterState.isActive) {
+      toggleClusterView(renderer, true, state.data[state.i].year, parseInt(kSelect.value));
+    }
+  });
+}
+
 // Start everything
 (async function init() {
   setupUI();
   await initVisualization();
+
+  // Load cluster data if available
+  const clusteringAvailable = await loadClusterData();
+
+  if (clusteringAvailable) {
+    setupClusterControls();
+  } else {
+    // Hide cluster controls if data isn't available
+    document.querySelector(".cluster-controls").style.display = "none";
+  }
+
   animate();
 })();
