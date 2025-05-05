@@ -2,18 +2,12 @@ import * as THREE from "three";
 import { OrbitControls } from "three/examples/jsm/controls/OrbitControls.js";
 import { EffectComposer } from "three/examples/jsm/postprocessing/EffectComposer.js";
 import { RenderPass } from "three/examples/jsm/postprocessing/RenderPass.js";
-import { ShaderPass } from "three/examples/jsm/postprocessing/ShaderPass.js";
 import { CONFIG } from "./config.js";
 
 export class Renderer {
   constructor() {
     this.scene = new THREE.Scene();
     this.scene.background = new THREE.Color(0x000000);
-
-    // Apply fog based on CONFIG
-    if (CONFIG.visualEffects.fog.enabled) {
-      this.scene.fog = new THREE.FogExp2(CONFIG.visualEffects.fog.color, CONFIG.visualEffects.fog.density);
-    }
 
     // Camera setup
     this.camera = new THREE.PerspectiveCamera(CONFIG.camera.fov, window.innerWidth / window.innerHeight, 1, 1000);
@@ -33,48 +27,9 @@ export class Renderer {
     this.renderer.toneMapping = THREE.ACESFilmicToneMapping;
     this.renderer.toneMappingExposure = 1.0;
 
-    // Post-processing setup
+    // Simplified post-processing setup without vignette
     this.composer = new EffectComposer(this.renderer);
     this.composer.addPass(new RenderPass(this.scene, this.camera));
-
-    // Add vignette effect if enabled
-    if (CONFIG.visualEffects.vignette.enabled) {
-      const vignettePass = new ShaderPass({
-        uniforms: {
-          tDiffuse: { value: null },
-          offset: { value: CONFIG.visualEffects.vignette.offset },
-          darkness: { value: CONFIG.visualEffects.vignette.darkness },
-        },
-        vertexShader: `
-          varying vec2 vUv;
-          void main() {
-            vUv = uv;
-            gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
-          }
-        `,
-        fragmentShader: `
-          uniform sampler2D tDiffuse;
-          uniform float offset;
-          uniform float darkness;
-          varying vec2 vUv;
-          void main() {
-            vec2 uv = vUv;
-            vec4 texel = texture2D(tDiffuse, vUv);
-            
-            // Create vignette
-            vec2 center = vec2(0.5);
-            float dist = length(uv - center) * offset;
-            float vignette = 1.0 - dist * darkness;
-            
-            // Apply vignette
-            texel.rgb *= vignette;
-            
-            gl_FragColor = texel;
-          }
-        `,
-      });
-      this.composer.addPass(vignettePass);
-    }
 
     // Set up lighting
     this.setupLighting();

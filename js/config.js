@@ -7,13 +7,6 @@ export const CONFIG = {
   rotationSpeed: 0.001,
   animationSpeed: 200,
 
-  entranceAnimation: {
-    enabled: true,
-    duration: 1500,
-    easingPower: 3,
-    randomizeDelay: true,
-  },
-
   camera: {
     distance: 500,
     initialPosition: [70, 70, 240],
@@ -25,19 +18,10 @@ export const CONFIG = {
 
   grayscaleThreshold: 0.05,
   colorDepth: 7,
-  useHSLQuantization: true,
+  useHSLQuantization: false,
 
+  // Keep only the lighting section from visualEffects
   visualEffects: {
-    fog: {
-      enabled: true,
-      density: 0.025,
-      color: 0x000000,
-    },
-    vignette: {
-      enabled: false,
-      offset: 10,
-      darkness: 10000,
-    },
     lighting: {
       ambient: {
         intensity: 0.4,
@@ -77,12 +61,6 @@ export const CONFIG = {
   opacity: {
     base: 1,
     saturatedBoost: 0.5,
-  },
-
-  smartSampling: {
-    enabled: true,
-    prioritizeChroma: true,
-    temporalImportance: true,
   },
 
   jitter: {

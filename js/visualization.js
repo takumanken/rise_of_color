@@ -108,19 +108,6 @@ function processYear(yearData) {
   const yearColors = [];
   const colors = yearData.color || [];
 
-  if (CONFIG.smartSampling.enabled) {
-    // Sort colors by chroma before processing, if enabled
-    if (CONFIG.smartSampling.prioritizeChroma) {
-      colors.sort((a, b) => {
-        const [h1, s1, l1] = rgbToHsl(...a);
-        const [h2, s2, l2] = rgbToHsl(...b);
-        const c1 = (1 - Math.abs(2 * l1 - 1)) * s1; // Chroma of color a
-        const c2 = (1 - Math.abs(2 * l2 - 1)) * s2; // Chroma of color b
-        return c2 - c1; // Higher chroma first
-      });
-    }
-  }
-
   for (const rgb of colors) {
     // Quantize using either RGB or HSL method
     const quantizedRgb = CONFIG.useHSLQuantization ? quantizeColorHSL(rgb) : quantizeColor(rgb);
