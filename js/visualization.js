@@ -1,32 +1,34 @@
 import * as THREE from "three";
-import { CONFIG, quantizeColor, calculatePosition, rgbToHsl } from "./config.js";
+import { CONFIG, quantizeColor, calculatePosition } from "./config.js";
 import { Renderer } from "./renderer.js";
 import { loadClusterData, toggleClusterView, clusterState } from "./cluster_viz.js";
 
 // Application State
 const state = {
-  data: [], // All data from JSON
+  data: [], // All years from JSON
   i: -1, // Current year index
-  playing: false, // Is animation playing?
+  playing: false, // Animation state
   timer: null, // Animation timer
-  colorData: [], // All processed colors
-  seen: new Set(), // Track unique colors
-  totalSpheres: 0, // Track sphere count
-  instanceCount: 0, // Track instance count
+  colorData: [], // Processed colors
+  seen: new Set(), // Unique colors tracker
+  totalSpheres: 0, // Total sphere count
+  instanceCount: 0, // Instance tracker
+  instancedSpheres: null, // Instanced mesh reference
+  yearDisplay: null, // UI elements
+  progressFill: null,
+  playButton: null,
 };
 
 // Create renderer and dummy for instanced mesh
 const renderer = new Renderer();
 const dummy = new THREE.Object3D();
 
-// ----- UI SETUP -----------------------------------------------------
+// UI Setup
 function setupUI() {
-  // Get references to DOM elements
   state.yearDisplay = document.getElementById("year-display");
   state.progressFill = document.getElementById("progress-fill");
   state.playButton = document.getElementById("play-pause");
 
-  // Event listeners
   state.playButton.addEventListener("click", () => {
     if (!state.playing) {
       if (state.i >= state.data.length - 1) {
@@ -39,7 +41,7 @@ function setupUI() {
   });
 }
 
-// ----- DATA HANDLING ------------------------------------------------
+// Data Handling
 async function loadData() {
   try {
     const response = await fetch("download_data/unique_colors_history.json");
@@ -55,11 +57,9 @@ function processYear(yearData) {
   const colors = yearData.color || [];
 
   for (const rgb of colors) {
-    // Quantize and create a unique key
     const quantizedRgb = quantizeColor(rgb);
     const key = quantizedRgb.join(",");
 
-    // Only add if we haven't seen this color before
     if (!state.seen.has(key)) {
       state.seen.add(key);
       const position = calculatePosition(quantizedRgb);
@@ -75,13 +75,10 @@ function processYear(yearData) {
 
 function addYearColors(yearColors) {
   const spheres = state.instancedSpheres;
-
-  // Get attributes
   const positionAttr = spheres.geometry.getAttribute("iPosition");
   const scaleAttr = spheres.geometry.getAttribute("iScale");
   const colorAttr = spheres.geometry.getAttribute("instanceColor");
 
-  // Prepare dummy object for matrix
   dummy.position.set(0, 0, 0);
   dummy.scale.set(1, 1, 1);
   dummy.updateMatrix();
@@ -110,7 +107,7 @@ function addYearColors(yearColors) {
   spheres.instanceMatrix.needsUpdate = true;
 }
 
-// ----- ANIMATION CONTROL --------------------------------------------
+// Animation Control
 function play() {
   state.playing = true;
   state.playButton.textContent = "Pause";
@@ -177,27 +174,23 @@ function animate() {
   renderer.render();
 }
 
-// ----- INITIALIZATION ----------------------------------------------
+// Initialization
 async function initVisualization() {
   state.data = await loadData();
-  console.log(`Loaded data for ${state.data.length} years`);
 
-  // Create mesh with reasonable capacity estimate
+  // Create mesh with capacity estimate
   const estimatedColors = 2000000;
   state.instancedSpheres = renderer.setupShaderInstancedMesh(estimatedColors);
 }
-
-// Update the setupClusterControls function to pass state.instancedSpheres directly:
 
 function setupClusterControls() {
   const toggleButton = document.getElementById("toggle-clusters");
   const kSelect = document.getElementById("cluster-k");
 
-  // Clear existing options
+  // Setup cluster size options
   kSelect.innerHTML = "";
-
-  // Add new k-values
   const kValues = [4, 8, 16, 32, 64];
+
   kValues.forEach((k) => {
     const option = document.createElement("option");
     option.value = k;
@@ -205,9 +198,9 @@ function setupClusterControls() {
     kSelect.appendChild(option);
   });
 
-  // Set default selection
   kSelect.value = "16";
 
+  // Toggle clusters visibility
   toggleButton.addEventListener("click", () => {
     const showClusters = toggleButton.textContent === "Show Clusters";
 
@@ -215,18 +208,16 @@ function setupClusterControls() {
       toggleButton.textContent = "Show All Colors";
       kSelect.style.display = "inline-block";
 
-      // Pass instancedSpheres directly
       toggleClusterView(renderer, true, state.data[state.i].year, parseInt(kSelect.value), state.instancedSpheres);
     } else {
       toggleButton.textContent = "Show Clusters";
       kSelect.style.display = "none";
 
-      // Back to normal view
       toggleClusterView(renderer, false, null, null, state.instancedSpheres);
     }
   });
 
-  // Handle K value changes
+  // Handle cluster count changes
   kSelect.addEventListener("change", () => {
     if (clusterState.isActive) {
       toggleClusterView(renderer, true, state.data[state.i].year, parseInt(kSelect.value), state.instancedSpheres);
@@ -234,18 +225,17 @@ function setupClusterControls() {
   });
 }
 
-// Start everything
+// Initialize application
 (async function init() {
   setupUI();
   await initVisualization();
 
-  // Load cluster data if available
+  // Set up clustering if available
   const clusteringAvailable = await loadClusterData();
 
   if (clusteringAvailable) {
     setupClusterControls();
   } else {
-    // Hide cluster controls if data isn't available
     document.querySelector(".cluster-controls").style.display = "none";
   }
 
