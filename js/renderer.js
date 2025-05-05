@@ -2,19 +2,17 @@ import * as THREE from "three";
 import { OrbitControls } from "three/examples/jsm/controls/OrbitControls.js";
 import { CONFIG } from "./config.js";
 
-// Shader for instanced geometry
+// Shaders for instanced geometry
 const INSTANCE_VERTEX_SHADER = `
 attribute vec3 instanceColor;
 attribute vec3 iPosition;
 attribute float iScale;
-
 varying vec3 vColor;
 varying vec3 vNormal;
 
 void main() {
   vColor = instanceColor;
   vNormal = normal;
-
   vec3 scaledPosition = position * iScale;
   vec4 mvPosition = modelViewMatrix * vec4(iPosition + scaledPosition, 1.0);
   gl_Position = projectionMatrix * mvPosition;
@@ -40,6 +38,25 @@ export class Renderer {
     this.setupEventListeners();
   }
 
+  // Get visualization container dimensions
+  getContainerDimensions() {
+    const vizContainer = document.querySelector(".visualization");
+    if (vizContainer) {
+      return {
+        element: vizContainer,
+        width: vizContainer.clientWidth,
+        height: vizContainer.clientHeight,
+      };
+    }
+
+    // Fallback dimensions
+    return {
+      element: null,
+      width: window.innerWidth * 0.75,
+      height: window.innerHeight,
+    };
+  }
+
   setupScene() {
     this.scene = new THREE.Scene();
     this.scene.background = new THREE.Color(0x000000);
@@ -48,20 +65,10 @@ export class Renderer {
   }
 
   setupCamera() {
-    // Get the visualization container dimensions for correct aspect ratio
-    const vizContainer = document.querySelector(".visualization") || {
-      clientWidth: window.innerWidth * 0.75,
-      clientHeight: window.innerHeight,
-    };
-    const aspect = vizContainer.clientWidth / vizContainer.clientHeight;
+    const { width, height } = this.getContainerDimensions();
+    const aspect = width / height;
 
-    // Create camera with proper aspect ratio
-    this.camera = new THREE.PerspectiveCamera(
-      CONFIG.camera.fov,
-      aspect, // Use the visualization container's aspect ratio
-      1,
-      1000
-    );
+    this.camera = new THREE.PerspectiveCamera(CONFIG.camera.fov, aspect, 1, 1000);
 
     this.camera.position.set(...CONFIG.camera.initialPosition);
   }
@@ -72,14 +79,16 @@ export class Renderer {
       powerPreference: "high-performance",
     });
 
-    // Get the visualization div dimensions
-    const vizContainer = document.querySelector(".visualization");
-    const containerWidth = vizContainer.clientWidth;
-    const containerHeight = vizContainer.clientHeight;
+    const { element, width, height } = this.getContainerDimensions();
 
-    this.renderer.setSize(containerWidth, containerHeight);
+    this.renderer.setSize(width, height);
     this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1));
-    vizContainer.appendChild(this.renderer.domElement);
+
+    if (element) {
+      element.appendChild(this.renderer.domElement);
+    } else {
+      document.body.appendChild(this.renderer.domElement);
+    }
 
     // Enhanced visual settings
     this.renderer.outputEncoding = THREE.sRGBEncoding;
@@ -126,13 +135,11 @@ export class Renderer {
   }
 
   handleResize() {
-    const vizContainer = document.querySelector(".visualization");
-    const containerWidth = vizContainer.clientWidth;
-    const containerHeight = vizContainer.clientHeight;
+    const { width, height } = this.getContainerDimensions();
 
-    this.camera.aspect = containerWidth / containerHeight;
+    this.camera.aspect = width / height;
     this.camera.updateProjectionMatrix();
-    this.renderer.setSize(containerWidth, containerHeight);
+    this.renderer.setSize(width, height);
 
     // Maintain consistent zoom
     if (!CONFIG.camera.zoomControl.enabled) {
