@@ -631,28 +631,6 @@ function createUI() {
   document.body.appendChild(playButton);
   state.playButton = playButton;
 
-  // Breathing toggle button
-  const breatheToggle = document.createElement("button");
-  breatheToggle.id = "breathe-toggle";
-  breatheToggle.textContent = "Toggle Breathing";
-  breatheToggle.style.position = "absolute";
-  breatheToggle.style.top = "10px";
-  breatheToggle.style.left = "10px";
-  breatheToggle.style.fontSize = "12px";
-  breatheToggle.style.padding = "5px 10px";
-  document.body.appendChild(breatheToggle);
-
-  // Rotation toggle button
-  const rotationToggle = document.createElement("button");
-  rotationToggle.id = "rotation-toggle";
-  rotationToggle.textContent = "Toggle Rotation";
-  rotationToggle.style.position = "absolute";
-  rotationToggle.style.top = "10px";
-  rotationToggle.style.left = "150px";
-  rotationToggle.style.fontSize = "12px";
-  rotationToggle.style.padding = "5px 10px";
-  document.body.appendChild(rotationToggle);
-
   // Event listeners
   playButton.addEventListener("click", () => {
     if (!state.playing) {
@@ -663,14 +641,6 @@ function createUI() {
     } else {
       pause();
     }
-  });
-
-  breatheToggle.addEventListener("click", () => {
-    CONFIG.breathingEffect.enabled = !CONFIG.breathingEffect.enabled;
-  });
-
-  rotationToggle.addEventListener("click", () => {
-    CONFIG.rotationSpeed = CONFIG.rotationSpeed ? 0 : 0.001;
   });
 }
 

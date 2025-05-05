@@ -22,7 +22,28 @@
       border-radius: 5px;
     }
     
-    /* Removed .controls, button, and button:hover CSS rules */
+    .controls {
+      position: absolute;
+      top: 20px;
+      right: 20px;
+      background: rgba(0,0,0,0.7);
+      padding: 10px;
+      border-radius: 5px;
+    }
+    
+    button {
+      background: rgba(255,255,255,0.2);
+      color: white;
+      border: none;
+      padding: 8px 12px;
+      margin: 5px;
+      cursor: pointer;
+      border-radius: 4px;
+    }
+    
+    button:hover {
+      background: rgba(255,255,255,0.3);
+    }
   </style>
 </head>
 <body>
@@ -30,9 +51,7 @@
     <h3>3D Color Wheel</h3>
     <p>Drag to rotate, scroll to zoom</p>
   </div>
-  
-  <!-- Removed the controls div with the toggle buttons -->
-  
+    
   <script type="importmap">
   {
     "imports": {
