@@ -1,7 +1,5 @@
 import * as THREE from "three";
 import { OrbitControls } from "three/examples/jsm/controls/OrbitControls.js";
-import { EffectComposer } from "three/examples/jsm/postprocessing/EffectComposer.js";
-import { RenderPass } from "three/examples/jsm/postprocessing/RenderPass.js";
 import { CONFIG } from "./config.js";
 
 // Extract shader code as constants
@@ -70,10 +68,6 @@ export class Renderer {
     this.renderer.toneMapping = THREE.ACESFilmicToneMapping;
     this.renderer.toneMappingExposure = 1.0;
 
-    // Simplified post-processing setup without vignette
-    this.composer = new EffectComposer(this.renderer);
-    this.composer.addPass(new RenderPass(this.scene, this.camera));
-
     // Set up lighting
     this.setupLighting();
 
@@ -81,15 +75,6 @@ export class Renderer {
     this.controls = new OrbitControls(this.camera, this.renderer.domElement);
     this.controls.enableDamping = true;
     this.controls.dampingFactor = CONFIG.camera.damping;
-
-    // Add an initial camera movement to show dimension
-    setTimeout(() => {
-      this.controls.autoRotate = true;
-      this.controls.autoRotateSpeed = CONFIG.camera.autoRotateSpeed;
-      setTimeout(() => {
-        this.controls.autoRotate = false;
-      }, CONFIG.camera.autoRotateDuration);
-    }, 1000);
 
     // Main color wheel group
     this.group = new THREE.Group();
@@ -100,37 +85,25 @@ export class Renderer {
   }
 
   setupLighting() {
-    const ambientLight = new THREE.AmbientLight(
-      CONFIG.visualEffects.lighting.ambient.color,
-      CONFIG.visualEffects.lighting.ambient.intensity
-    );
+    // Keep ambient light
+    const ambientLight = new THREE.AmbientLight(0xffffff, 0.5);
     this.scene.add(ambientLight);
 
-    const mainLight = new THREE.DirectionalLight(
-      CONFIG.visualEffects.lighting.main.color,
-      CONFIG.visualEffects.lighting.main.intensity
-    );
-    mainLight.position.set(...CONFIG.visualEffects.lighting.main.position);
+    // Keep main directional light
+    const mainLight = new THREE.DirectionalLight(0xffffff, 0.8);
+    mainLight.position.set(1, 1, 1);
     this.scene.add(mainLight);
-
-    const rimLight = new THREE.DirectionalLight(
-      CONFIG.visualEffects.lighting.rim.color,
-      CONFIG.visualEffects.lighting.rim.intensity
-    );
-    rimLight.position.set(...CONFIG.visualEffects.lighting.rim.position);
-    this.scene.add(rimLight);
   }
 
   handleResize() {
     this.camera.aspect = window.innerWidth / window.innerHeight;
     this.camera.updateProjectionMatrix();
     this.renderer.setSize(window.innerWidth, window.innerHeight);
-    this.composer.setSize(window.innerWidth, window.innerHeight);
   }
 
   render() {
     this.controls.update();
-    this.composer.render();
+    this.renderer.render(this.scene, this.camera);
   }
 
   setupShaderInstancedMesh(estimatedCount) {
