@@ -18,7 +18,6 @@ export const CONFIG = {
 
   grayscaleThreshold: 0.05,
   colorDepth: 7,
-  useHSLQuantization: false,
 
   // Keep only the lighting section from visualEffects
   visualEffects: {
