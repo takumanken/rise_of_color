@@ -12,20 +12,22 @@ body {
 
 /* Left panel */
 .info-panel {
+  width: 30%;
   display: flex;
   flex-direction: column;
-  justify-content: space-between; /* Pushes content to top and bottom */
+  justify-content: space-between;
   height: 100%;
   padding: 0 0 20px 80px;
   box-sizing: border-box;
+  position: relative;
 }
 
-/* Create a centered content container for main content */
 .info-panel-content {
   display: flex;
   flex-direction: column;
-  justify-content: center; /* Centers content vertically */
+  justify-content: center;
   flex-grow: 1;
+  text-align: left;
 }
 
 /* Divider line */
@@ -54,59 +56,13 @@ body {
   flex-shrink: 0;
 }
 
-/* Simplified visualization controls - text only */
-.visualization-controls {
+canvas {
   position: absolute;
-  bottom: 0px;
-  left: 50%;
-  transform: translateX(-50%);
-  display: flex;
-  z-index: 100;
-  pointer-events: none;
-}
-
-.view-selector {
-  background: transparent;
-  backdrop-filter: none;
-  border: none;
-  padding: 8px 0;
-  display: flex;
-  align-items: center;
-  pointer-events: auto;
-  box-shadow: none;
-}
-
-.view-label, .view-selector button, .view-divider {
-  display: inline-flex;
-  align-items: center;
-  height: 20px;
-  line-height: 20px;
-  font-size: 0.8rem;
-  vertical-align: middle;
-}
-
-.view-divider {
-  color: rgba(255, 255, 255, 0.3);
-  padding: 0 8px;
-  user-select: none;
-}
-
-.view-selector button {
-  background: transparent;
-  border: none;
-  color: rgba(255, 255, 255, 0.7);
-  padding: 0;
-  cursor: pointer;
-  transition: color 0.2s ease;
-}
-
-.view-selector button:hover {
-  color: white;
-}
-
-/* Hide unused elements */
-#view-top::before, #view-bottom::before, #view-default::before {
-  display: none;
+  top: 0;
+  right: 0;
+  width: 100% !important;
+  height: 100% !important;
+  outline: none;
 }
 
 /* ===== TYPOGRAPHY ===== */
@@ -174,58 +130,6 @@ button:hover {
   background: rgba(255, 255, 255, 0.3);
 }
 
-.view-controls {
-  margin-top: 15px;
-}
-
-.view-controls button {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  background: rgba(255, 255, 255, 0.15);
-  padding: 8px 15px;
-}
-
-.view-controls button::before {
-  content: '';
-  display: inline-block;
-  width: 12px;
-  height: 12px;
-  margin-right: 6px;
-  background-size: contain;
-  background-repeat: no-repeat;
-}
-
-#view-top::before {
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' fill='white' viewBox='0 0 16 16'%3E%3Cpath d='M8 4a.5.5 0 0 1 .5.5v5.793l2.146-2.147a.5.5 0 0 1 .708.708l-3 3a.5.5 0 0 1-.708 0l-3-3a.5.5 0 1 1 .708-.708L7.5 10.293V4.5A.5.5 0 0 1 8 4z'/%3E%3C/svg%3E");
-  transform: rotate(180deg);
-}
-
-#view-bottom::before {
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' fill='white' viewBox='0 0 16 16'%3E%3Cpath d='M8 4a.5.5 0 0 1 .5.5v5.793l2.146-2.147a.5.5 0 0 1 .708.708l-3 3a.5.5 0 0 1-.708 0l-3-3a.5.5 0 1 1 .708-.708L7.5 10.293V4.5A.5.5 0 0 1 8 4z'/%3E%3C/svg%3E");
-}
-
-#view-default::before {
-  display: none;
-}
-
-/* ===== PROGRESS BAR ===== */
-#progress-bar {
-  width: 100%;
-  height: 4px;
-  background: rgba(255, 255, 255, 0.2);
-  border-radius: 2px;
-  overflow: hidden;
-  margin-bottom: 20px;
-}
-
-#progress-fill {
-  height: 100%;
-  width: 0%;
-  background: white;
-  transition: width 0.3s ease;
-}
-
 /* ===== CLUSTER CONTROLS ===== */
 .cluster-controls {
   margin-top: 20px;
@@ -246,14 +150,187 @@ button:hover {
   border-color: rgba(255, 255, 255, 0.5);
 }
 
-/* ===== CANVAS ===== */
-canvas {
-  position: absolute;
-  top: 0;
-  right: 0;
-  width: 100% !important;
-  height: 100% !important;
+/* ===== YEAR SLIDER ===== */
+.year-slider-container {
+  width: 100%;
+}
+
+.slider-track {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+#year-slider {
+  flex-grow: 1;
+  -webkit-appearance: none;
+  height: 4px;
+  background: #222222;
+  border-radius: 2px;
   outline: none;
+  position: relative;
+  cursor: pointer;
+  transition: background 0.2s ease;
+}
+
+#year-slider:hover, 
+#year-slider:focus {
+  background: #444444;
+}
+
+#year-slider::-webkit-slider-runnable-track {
+  height: 4px;
+  cursor: pointer;
+}
+
+#year-slider::-moz-range-track {
+  height: 4px;
+  cursor: pointer;
+}
+
+#year-slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 6px;
+  height: 18px;
+  border-radius: 4px;
+  background: white;
+  cursor: pointer;
+  border: none;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.3);
+  transition: all 0.2s ease;
+  position: relative;
+  top: 50%;
+  transform: translateY(-50%);
+}
+
+#year-slider::-moz-range-thumb {
+  width: 6px;
+  height: 18px;
+  border-radius: 4px;
+  background: white;
+  cursor: pointer;
+  border: none;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.3);
+  transition: all 0.2s ease;
+}
+
+#year-slider:hover::-webkit-slider-thumb,
+#year-slider:focus::-webkit-slider-thumb {
+  width: 8px;
+  height: 20px;
+}
+
+#year-slider:hover::-moz-range-thumb,
+#year-slider:focus::-moz-range-thumb {
+  width: 8px;
+  height: 20px;
+}
+
+#min-year, #max-year {
+  min-width: 40px;
+  font-variant-numeric: tabular-nums;
+  color: rgba(255, 255, 255, 0.5);
+  font-size: 0.75rem;
+}
+
+/* ===== PLAY/PAUSE BUTTON ===== */
+.time-control-btn {
+  background: rgba(255, 255, 255, 0.2);
+  color: white;
+  border: none;
+  width: 26px;
+  height: 26px;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  cursor: pointer;
+  transition: background 0.2s ease;
+  margin-left: 5px;
+  position: relative;
+}
+
+.time-control-btn:hover {
+  background: rgba(255, 255, 255, 0.3);
+}
+
+.time-control-btn.play::before {
+  content: '';
+  width: 0;
+  height: 0;
+  border-style: solid;
+  border-width: 5px 0 5px 8px;
+  border-color: transparent transparent transparent white;
+  margin-left: 2px;
+}
+
+.time-control-btn.pause::before,
+.time-control-btn.pause::after {
+  content: '';
+  position: absolute;
+  width: 3px;
+  height: 10px;
+  background: white;
+}
+
+.time-control-btn.pause::before {
+  left: 9px;
+}
+
+.time-control-btn.pause::after {
+  right: 9px;
+}
+
+/* ===== VIEW CONTROLS ===== */
+.visualization-controls {
+  position: absolute;
+  bottom: 0px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  z-index: 100;
+  pointer-events: none;
+}
+
+.view-selector {
+  background: transparent;
+  border: none;
+  padding: 8px 0;
+  display: flex;
+  align-items: center;
+  pointer-events: auto;
+}
+
+.view-label, .view-selector button, .view-divider {
+  display: inline-flex;
+  align-items: center;
+  height: 20px;
+  line-height: 20px;
+  font-size: 0.8rem;
+}
+
+.view-divider {
+  color: rgba(255, 255, 255, 0.3);
+  padding: 0 8px;
+  user-select: none;
+}
+
+.view-selector button {
+  background: transparent;
+  border: none;
+  color: rgba(255, 255, 255, 0.7);
+  padding: 0;
+  cursor: pointer;
+  transition: color 0.2s ease;
+}
+
+.view-selector button:hover {
+  color: white;
+}
+
+#view-top::before, #view-bottom::before, #view-default::before {
+  display: none;
 }
 
 /* ===== FOOTER ===== */
@@ -262,7 +339,6 @@ canvas {
   opacity: 0.7;
   line-height: 1.5;
   margin-top: auto;
-  padding-top: 20px;
 }
 
 .credits {
@@ -298,7 +374,6 @@ canvas {
   transition: opacity 0.5s ease;
 }
 
-/* Rainbow colorful spinner */
 .spinner {
   width: 60px;
   height: 60px;
@@ -335,206 +410,4 @@ canvas {
   text-align: center;
   font-weight: 300;
   letter-spacing: 0.5px;
-}
-
-/* Visualization controls */
-.viz-controls {
-  position: absolute;
-  bottom: 20px;
-  left: 20px;
-  display: flex;
-  flex-wrap: wrap;
-  max-width: 240px;
-  z-index: 100;
-  background: rgba(0, 0, 0, 0.6);
-  padding: 10px;
-  border-radius: 5px;
-  backdrop-filter: blur(5px);
-}
-
-.viz-controls button {
-  background: rgba(255, 255, 255, 0.2);
-  color: white;
-  border: none;
-  padding: 8px 12px;
-  margin: 4px;
-  cursor: pointer;
-  border-radius: 4px;
-  font-size: 0.9rem;
-  transition: background 0.2s ease;
-}
-
-.viz-controls button:hover {
-  background: rgba(255, 255, 255, 0.3);
-}
-
-.viz-controls select {
-  background: rgba(0, 0, 0, 0.7);
-  color: white;
-  border: 1px solid rgba(255, 255, 255, 0.3);
-  padding: 7px 10px;
-  border-radius: 4px;
-  cursor: pointer;
-  font-size: 0.9rem;
-  margin: 4px;
-  max-width: 110px;
-}
-
-/* Year slider styling */
-.slider-container {
-  margin: 15px 0;
-  width: 100%;
-}
-
-.slider-container label {
-  display: block;
-  margin-bottom: 8px;
-  font-weight: 500;
-}
-
-.slider-track {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-}
-
-#year-slider {
-  flex-grow: 1;
-  -webkit-appearance: none;
-  height: 4px;
-  background: #222222;
-  border-radius: 2px;
-  outline: none;
-  position: relative;
-  cursor: pointer;
-  transition: background 0.2s ease;
-}
-
-/* Enhance track on hover */
-#year-slider:hover {
-  background: #444444;
-}
-
-/* Focus state for accessibility */
-#year-slider:focus {
-  background: #444444;
-}
-
-/* Enhance thumb on hover and focus */
-#year-slider:hover::-webkit-slider-thumb,
-#year-slider:focus::-webkit-slider-thumb {
-  width: 8px;
-  height: 20px;
-  background: #ffffff;
-}
-
-#year-slider:hover::-moz-range-thumb,
-#year-slider:focus::-moz-range-thumb {
-  width: 8px;
-  height: 20px;
-  background: #ffffff;
-}
-
-/* Default thumb styling */
-#year-slider::-webkit-slider-thumb {
-  -webkit-appearance: none;
-  appearance: none;
-  width: 6px;
-  height: 18px;
-  border-radius: 4px;
-  background: white;
-  cursor: pointer;
-  border: none;
-  box-shadow: 0 1px 3px rgba(0,0,0,0.3);
-  transition: all 0.2s ease;
-  position: relative;
-  top: 50%;
-  transform: translateY(-50%);
-}
-
-#year-slider::-moz-range-thumb {
-  width: 6px;
-  height: 18px;
-  border-radius: 4px;
-  background: white;
-  cursor: pointer;
-  border: none;
-  box-shadow: 0 1px 3px rgba(0,0,0,0.3);
-  transition: all 0.2s ease;
-}
-
-/* Progress track styling */
-#year-slider::-webkit-slider-runnable-track {
-  height: 4px;
-  cursor: pointer;
-}
-
-#year-slider::-moz-range-track {
-  height: 4px;
-  cursor: pointer;
-}
-
-/* Time control button styling */
-.time-control-btn {
-  background: rgba(255, 255, 255, 0.2);
-  color: white;
-  border: none;
-  width: 26px;
-  height: 26px;
-  padding: 0;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border-radius: 50%;
-  cursor: pointer;
-  transition: background 0.2s ease;
-  margin-left: 5px;
-  position: relative;
-}
-
-.time-control-btn:hover {
-  background: rgba(255, 255, 255, 0.3);
-}
-
-/* Play icon (triangle) */
-.time-control-btn.play::before {
-  content: '';
-  width: 0;
-  height: 0;
-  border-style: solid;
-  border-width: 5px 0 5px 8px;
-  border-color: transparent transparent transparent white;
-  margin-left: 2px; /* Optical alignment */
-}
-
-/* Pause icon (two vertical bars) */
-.time-control-btn.pause::before,
-.time-control-btn.pause::after {
-  content: '';
-  position: absolute;
-  width: 3px;
-  height: 10px;
-  background: white;
-}
-
-.time-control-btn.pause::before {
-  left: 9px;
-}
-
-.time-control-btn.pause::after {
-  right: 9px;
-}
-
-/* Modify the slider track to accommodate the button */
-.year-slider-container .slider-track {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-}
-
-#min-year, #max-year {
-  min-width: 40px;
-  font-variant-numeric: tabular-nums;
-  color: rgba(255, 255, 255, 0.5);
-  font-size: 0.75rem;
 }
