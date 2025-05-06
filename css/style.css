@@ -135,7 +135,6 @@ button:hover {
   margin-top: 20px;
 }
 
-/* Make the toggle-clusters button less prominent */
 #toggle-clusters {
   background: rgba(255, 255, 255, 0.15);
   color: rgba(255, 255, 255, 0.8);
@@ -150,7 +149,6 @@ button:hover {
   background: rgba(255, 255, 255, 0.25);
 }
 
-/* Make the cluster selector smaller */
 .cluster-controls select {
   background: rgba(0, 0, 0, 0.5);
   color: rgba(255, 255, 255, 0.8);
@@ -196,8 +194,20 @@ button:hover {
   background: #444444;
 }
 
-/* Common properties for slider thumb */
-#year-slider::-webkit-slider-thumb,
+/* Slider thumbs - consolidated styles */
+#year-slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 6px;
+  height: 18px;
+  border-radius: 4px;
+  background: white;
+  cursor: pointer;
+  border: none;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.3);
+  transition: all 0.2s ease;
+}
+
 #year-slider::-moz-range-thumb {
   width: 6px;
   height: 18px;
@@ -209,12 +219,7 @@ button:hover {
   transition: all 0.2s ease;
 }
 
-/* WebKit-specific settings */
-#year-slider::-webkit-slider-thumb {
-  -webkit-appearance: none;
-}
-
-/* Hover/focus states */
+/* Hover/focus states - consolidated */
 #year-slider:hover::-webkit-slider-thumb,
 #year-slider:focus::-webkit-slider-thumb,
 #year-slider:hover::-moz-range-thumb,
