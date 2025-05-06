@@ -17,6 +17,11 @@ const state = {
   yearDisplay: null, // UI elements
   progressFill: null,
   playButton: null,
+  loading: {
+    isLoading: true,
+    dataReady: false,
+    message: "Loading visualization data...",
+  },
 };
 
 // Create renderer and dummy for instanced mesh
@@ -176,11 +181,28 @@ function animate() {
 
 // Initialization
 async function initVisualization() {
+  // Show loading state
+  document.getElementById("loading-message").textContent = "Loading color data...";
+  state.loading.isLoading = true;
+  state.playButton.disabled = true;
+
+  // Load data with progress indication if possible
   state.data = await loadData();
+  document.getElementById("loading-message").textContent = "Initializing visualization...";
 
   // Create mesh with capacity estimate
   const estimatedColors = 2000000;
   state.instancedSpheres = renderer.setupShaderInstancedMesh(estimatedColors);
+
+  // Hide loading overlay when ready
+  setTimeout(() => {
+    document.getElementById("loading-overlay").style.opacity = 0;
+    setTimeout(() => {
+      document.getElementById("loading-overlay").style.display = "none";
+    }, 500);
+    state.loading.isLoading = false;
+    state.playButton.disabled = false;
+  }, 500);
 }
 
 function setupClusterControls() {
