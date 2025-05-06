@@ -3,34 +3,27 @@ import { CONFIG, quantizeColor, calculatePosition } from "./config.js";
 import { Renderer } from "./renderer.js";
 import { loadClusterData, toggleClusterView, clusterState } from "./cluster_viz.js";
 
-/**
- * Application State
- */
+// Application State
 const state = {
-  data: [], // Color data by year
-  i: -1, // Current year index
-  playing: false, // Animation state
-  timer: null, // Animation timer
-  colorData: [], // All processed colors
-  seen: new Set(), // Unique colors tracker
-  totalSpheres: 0, // Total sphere count
-  instanceCount: 0, // Instance counter
-  instancedSpheres: null, // ThreeJS instanced mesh
-  yearDisplay: null, // UI element references
+  data: [],
+  i: -1,
+  playing: false,
+  timer: null,
+  colorData: [],
+  seen: new Set(),
+  totalSpheres: 0,
+  instanceCount: 0,
+  instancedSpheres: null,
+  yearDisplay: null,
   progressFill: null,
   playButton: null,
-  loading: {
-    isLoading: true,
-  },
+  loading: { isLoading: true },
+  isJumping: false,
 };
 
-// Create renderer and dummy for instanced mesh
 const renderer = new Renderer();
 const dummy = new THREE.Object3D();
 
-/**
- * UI Setup
- */
 function setupUI() {
   state.yearDisplay = document.getElementById("year-display");
   state.progressFill = document.getElementById("progress-fill");
@@ -38,45 +31,30 @@ function setupUI() {
 
   state.playButton.addEventListener("click", () => {
     if (!state.playing) {
-      if (state.i >= state.data.length - 1) {
-        reset();
-      }
+      if (state.i >= state.data.length - 1) reset();
       play();
     } else {
       pause();
     }
   });
 
-  // Add view control handlers
   document.getElementById("view-top").addEventListener("click", () => {
-    animateCameraTo({
-      x: 0,
-      y: 1, // Direction pointing up
-      z: 0,
-    });
+    animateCameraTo({ x: 0, y: 1, z: 0 });
   });
 
   document.getElementById("view-bottom").addEventListener("click", () => {
-    animateCameraTo({
-      x: 0,
-      y: -1, // Direction pointing down
-      z: 0,
-    });
+    animateCameraTo({ x: 0, y: -1, z: 0 });
   });
 
   document.getElementById("view-default").addEventListener("click", () => {
     const initialPos = CONFIG.camera.initialPosition;
     const initialVector = new THREE.Vector3(initialPos[0], initialPos[1], initialPos[2]);
     const initialSpherical = new THREE.Spherical().setFromVector3(initialVector);
-
     const camera = renderer.camera;
     const currentPosition = camera.position.clone();
     const currentSpherical = new THREE.Spherical().setFromVector3(currentPosition);
-
     const targetSpherical = new THREE.Spherical(currentSpherical.radius, initialSpherical.phi, currentSpherical.theta);
-
     const targetVector = new THREE.Vector3().setFromSpherical(targetSpherical);
-
     animateCameraTo({
       x: targetVector.x,
       y: targetVector.y,
@@ -85,9 +63,6 @@ function setupUI() {
   });
 }
 
-/**
- * Data Processing Functions
- */
 async function loadData() {
   try {
     const response = await fetch("assets/unique_colors_history.json");
@@ -96,6 +71,52 @@ async function loadData() {
     console.error("Error loading data:", err);
     return [];
   }
+}
+
+function setupYearSlider() {
+  const slider = document.getElementById("year-slider");
+  const minYearElem = document.getElementById("min-year");
+  const maxYearElem = document.getElementById("max-year");
+
+  const minYear = 1850;
+  const maxYear = 2025;
+
+  minYearElem.textContent = minYear;
+  maxYearElem.textContent = maxYear;
+
+  slider.min = minYear;
+  slider.max = maxYear;
+  slider.value = minYear;
+
+  slider.addEventListener("input", function () {
+    const targetYear = parseInt(this.value);
+    const targetIndex = state.data.findIndex((item) => item.year >= targetYear);
+
+    if (targetIndex === -1) return;
+
+    if (state.playing) pause();
+
+    jumpToYear(targetIndex);
+  });
+}
+
+function jumpToYear(index) {
+  const targetYear = state.data[index].year;
+  const slider = document.getElementById("year-slider");
+  slider.value = targetYear;
+
+  if (index < state.i) {
+    state.isJumping = true;
+    reset();
+    state.i = -1;
+    state.isJumping = false;
+  }
+
+  while (state.i < index) {
+    step();
+  }
+
+  slider.value = targetYear;
 }
 
 function processYear(yearData) {
@@ -109,7 +130,6 @@ function processYear(yearData) {
     if (!state.seen.has(key)) {
       state.seen.add(key);
       const position = calculatePosition(quantizedRgb);
-
       yearColors.push(position);
       state.colorData.push(position);
       state.totalSpheres++;
@@ -130,22 +150,17 @@ function addYearColors(yearColors) {
   dummy.updateMatrix();
 
   yearColors.forEach((colorData) => {
-    // Position
     positionAttr.setXYZ(state.instanceCount, colorData.x, colorData.y, colorData.z);
 
-    // Scale based on color saturation
     const dotScale = 0.8 + colorData.c * 0.4;
     scaleAttr.setX(state.instanceCount, dotScale);
 
-    // Color
     colorAttr.setXYZ(state.instanceCount, colorData.rgb[0] / 255, colorData.rgb[1] / 255, colorData.rgb[2] / 255);
 
-    // Matrix
     spheres.setMatrixAt(state.instanceCount, dummy.matrix);
     state.instanceCount++;
   });
 
-  // Update buffers
   spheres.count = state.instanceCount;
   positionAttr.needsUpdate = true;
   scaleAttr.needsUpdate = true;
@@ -153,9 +168,6 @@ function addYearColors(yearColors) {
   spheres.instanceMatrix.needsUpdate = true;
 }
 
-/**
- * Animation Control Functions
- */
 function play() {
   state.playing = true;
   state.playButton.textContent = "Pause";
@@ -171,26 +183,26 @@ function pause() {
 function reset() {
   pause();
 
-  // Reset state
   state.i = -1;
   state.colorData = [];
   state.seen = new Set();
   state.totalSpheres = 0;
   state.instanceCount = 0;
 
-  // Remove all spheres
   while (renderer.group.children.length > 0) {
     renderer.group.remove(renderer.group.children[0]);
   }
 
-  // Reset UI
   state.yearDisplay.textContent = "–";
   document.getElementById("total-colors").textContent = "0";
   state.progressFill.style.width = "0%";
   state.playButton.textContent = "Start";
 
-  // Recreate visualization
-  initVisualization();
+  if (!state.isJumping) {
+    initVisualization();
+  } else {
+    state.instancedSpheres = renderer.setupShaderInstancedMesh(2000000);
+  }
 }
 
 function step() {
@@ -204,18 +216,18 @@ function step() {
   const yearData = state.data[state.i];
   const yearColors = processYear(yearData);
 
-  // Update UI
   state.yearDisplay.textContent = yearData.year;
   document.getElementById("total-colors").textContent = state.colorData.length.toLocaleString();
   state.progressFill.style.width = `${((state.i + 1) / state.data.length) * 100}%`;
 
-  // Add spheres
   addYearColors(yearColors);
 
-  // Update clusters if they're being displayed
   if (clusterState.isActive) {
     toggleClusterView(renderer, true, yearData.year, clusterState.currentK, state.instancedSpheres);
   }
+
+  const slider = document.getElementById("year-slider");
+  slider.value = yearData.year;
 }
 
 function animate() {
@@ -224,31 +236,20 @@ function animate() {
   renderer.render();
 }
 
-/**
- * Initialization Functions
- */
 async function initVisualization() {
-  // Show loading state
   document.getElementById("loading-message").textContent = "Loading...";
   state.loading.isLoading = true;
   state.playButton.disabled = true;
 
-  // Load data
   state.data = await loadData();
+  state.instancedSpheres = renderer.setupShaderInstancedMesh(2000000);
 
-  // Create mesh with capacity estimate
-  const estimatedColors = 2000000;
-  state.instancedSpheres = renderer.setupShaderInstancedMesh(estimatedColors);
-
-  // Process first step immediately
   state.playing = true;
   state.playButton.textContent = "Pause";
   step();
 
-  // Start animation timer
   state.timer = setInterval(step, CONFIG.animationSpeed);
 
-  // Hide loading overlay
   setTimeout(() => {
     document.getElementById("loading-overlay").style.opacity = 0;
     setTimeout(() => {
@@ -257,17 +258,16 @@ async function initVisualization() {
     state.loading.isLoading = false;
     state.playButton.disabled = false;
   }, 100);
+
+  setupYearSlider();
 }
 
 function setupClusterControls() {
   const toggleButton = document.getElementById("toggle-clusters");
   const kSelect = document.getElementById("cluster-k");
 
-  // Setup cluster size options
   kSelect.innerHTML = "";
-  const kValues = [4, 8, 16, 32, 64];
-
-  kValues.forEach((k) => {
+  [4, 8, 16, 32, 64].forEach((k) => {
     const option = document.createElement("option");
     option.value = k;
     option.textContent = `${k} Clusters`;
@@ -276,24 +276,20 @@ function setupClusterControls() {
 
   kSelect.value = "16";
 
-  // Toggle clusters visibility
   toggleButton.addEventListener("click", () => {
     const showClusters = toggleButton.textContent === "Show Clusters";
 
     if (showClusters) {
       toggleButton.textContent = "Show All Colors";
       kSelect.style.display = "inline-block";
-
       toggleClusterView(renderer, true, state.data[state.i].year, parseInt(kSelect.value), state.instancedSpheres);
     } else {
       toggleButton.textContent = "Show Clusters";
       kSelect.style.display = "none";
-
       toggleClusterView(renderer, false, null, null, state.instancedSpheres);
     }
   });
 
-  // Handle cluster count changes
   kSelect.addEventListener("change", () => {
     if (clusterState.isActive) {
       toggleClusterView(renderer, true, state.data[state.i].year, parseInt(kSelect.value), state.instancedSpheres);
@@ -301,9 +297,6 @@ function setupClusterControls() {
   });
 }
 
-/**
- * Camera Animation Function - Moves along sphere surface
- */
 function animateCameraTo(targetDirection) {
   const camera = renderer.camera;
   const startPosition = camera.position.clone();
@@ -315,7 +308,6 @@ function animateCameraTo(targetDirection) {
     .multiplyScalar(radius);
   const targetSpherical = new THREE.Spherical().setFromVector3(targetVector);
 
-  // Take shortest path around the sphere
   if (Math.abs(targetSpherical.phi - startSpherical.phi) > Math.PI) {
     if (targetSpherical.phi > startSpherical.phi) {
       targetSpherical.phi -= 2 * Math.PI;
@@ -330,7 +322,7 @@ function animateCameraTo(targetDirection) {
   function animate() {
     const elapsed = Date.now() - startTime;
     const progress = Math.min(elapsed / duration, 1);
-    const easeProgress = 1 - Math.pow(1 - progress, 3); // Cubic ease out
+    const easeProgress = 1 - Math.pow(1 - progress, 3);
 
     const currentSpherical = new THREE.Spherical(
       radius,
@@ -349,14 +341,10 @@ function animateCameraTo(targetDirection) {
   animate();
 }
 
-/**
- * Initialize application
- */
 (async function init() {
   setupUI();
   await initVisualization();
 
-  // Set up clustering if available
   const clusteringAvailable = await loadClusterData();
 
   if (clusteringAvailable) {
