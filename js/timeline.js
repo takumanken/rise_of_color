@@ -6,21 +6,11 @@ export class Timeline {
   constructor(state, renderer) {
     this.state = state;
     this.renderer = renderer;
-    this.resettingFromPlay = false; // Track if reset was called from play
+    this.resettingFromPlay = false;
+    this.sliderInitialized = false;
   }
 
-  // Helper methods for timer management
-  _startTimer() {
-    this._stopTimer(); // Always ensure only one timer is running
-    this.state.timer = setInterval(() => this.step(), CONFIG.animationSpeed);
-  }
-
-  _stopTimer() {
-    if (this.state.timer !== null) {
-      clearInterval(this.state.timer);
-      this.state.timer = null;
-    }
-  }
+  // ===== DATA LOADING =====
 
   async loadData() {
     try {
@@ -32,61 +22,78 @@ export class Timeline {
     }
   }
 
-  setupYearSlider() {
-    const slider = document.getElementById("year-slider");
-    const minYear = 1850;
-    const maxYear = 2025;
-    slider.min = minYear;
-    slider.max = maxYear;
-    slider.value = minYear;
+  async initVisualization(skipTimer = false) {
+    this._stopTimer();
 
-    slider.addEventListener("input", (e) => {
-      const targetYear = parseInt(e.target.value);
-      const targetIndex = this.state.data.findIndex((item) => item.year >= targetYear);
+    // Show loading state
+    document.getElementById("loading-message").textContent = "Loading...";
+    this.state.loading.isLoading = true;
+    this.state.playButton.disabled = true;
 
-      if (targetIndex === -1) return;
+    // Load data and initialize 3D objects
+    this.state.data = await this.loadData();
+    this.state.instancedSpheres = this.renderer.setupShaderInstancedMesh(2000000);
 
-      if (this.state.playing) this.pause();
+    // Setup slider once
+    if (!this.sliderInitialized) {
+      this.setupYearSlider();
+      this.sliderInitialized = true;
+    }
 
-      this.jumpToYear(targetIndex);
-    });
+    // Set initial UI state
+    this.state.playing = true;
+    this.state.playButton.textContent = "";
+    this.state.playButton.classList.remove("play");
+    this.state.playButton.classList.add("pause");
+
+    // Start animation if not being reset during play
+    if (!skipTimer) {
+      this._startTimer();
+    }
+
+    // Hide loading overlay
+    setTimeout(() => {
+      document.getElementById("loading-overlay").style.opacity = 0;
+      setTimeout(() => {
+        document.getElementById("loading-overlay").style.display = "none";
+      }, 500);
+      this.state.loading.isLoading = false;
+      this.state.playButton.disabled = false;
+    }, 100);
   }
 
-  jumpToYear(index) {
-    const targetYear = this.state.data[index].year;
-    const slider = document.getElementById("year-slider");
-    slider.value = targetYear;
+  // ===== PLAYBACK CONTROLS =====
 
-    if (index < this.state.i) {
-      this.state.isJumping = true;
-      this.reset();
-      this.state.i = -1;
-      this.state.isJumping = false;
+  _startTimer() {
+    this._stopTimer();
+    this.state.timer = setInterval(() => this.step(), CONFIG.animationSpeed);
+  }
+
+  _stopTimer() {
+    if (this.state.timer !== null) {
+      clearInterval(this.state.timer);
+      this.state.timer = null;
     }
-
-    while (this.state.i < index) {
-      this.step();
-    }
-
-    slider.value = targetYear;
   }
 
   async play() {
-    // Guard against double play clicks
+    // Prevent double-click issues
     if (this.state.playing) return;
 
-    // If we're at the end, restart first
+    // Reset if at the end
     if (this.state.i >= this.state.data.length - 1) {
       this.resettingFromPlay = true;
       await this.reset();
       this.resettingFromPlay = false;
     }
 
+    // Update UI
     this.state.playing = true;
     this.state.playButton.textContent = "";
     this.state.playButton.classList.remove("play");
     this.state.playButton.classList.add("pause");
 
+    // Start playback
     this._startTimer();
   }
 
@@ -95,20 +102,38 @@ export class Timeline {
     this.state.playButton.textContent = "";
     this.state.playButton.classList.remove("pause");
     this.state.playButton.classList.add("play");
-
     this._stopTimer();
   }
 
   async reset() {
     this.pause();
 
+    // Reset state
     this.state.i = -1;
     this.state.colorData = [];
     this.state.seen = new Set();
     this.state.totalSpheres = 0;
     this.state.instanceCount = 0;
 
-    // Properly dispose of Three.js objects
+    // Clean up 3D objects and release memory
+    this._disposeThreeJsObjects();
+
+    // Reset UI
+    this.state.yearDisplay.textContent = "–";
+    document.getElementById("total-colors").textContent = "0";
+    this.state.playButton.textContent = "";
+    this.state.playButton.classList.remove("pause");
+    this.state.playButton.classList.add("play");
+
+    // Reinitialize visualization
+    if (!this.state.isJumping) {
+      await this.initVisualization(this.resettingFromPlay);
+    } else {
+      this.state.instancedSpheres = this.renderer.setupShaderInstancedMesh(2000000);
+    }
+  }
+
+  _disposeThreeJsObjects() {
     while (this.renderer.group.children.length > 0) {
       const obj = this.renderer.group.children[0];
       if (obj.geometry) obj.geometry.dispose();
@@ -121,80 +146,73 @@ export class Timeline {
       }
       this.renderer.group.remove(obj);
     }
-
-    this.state.yearDisplay.textContent = "–";
-    document.getElementById("total-colors").textContent = "0";
-    this.state.playButton.textContent = "";
-    this.state.playButton.classList.remove("pause");
-    this.state.playButton.classList.add("play");
-
-    if (!this.state.isJumping) {
-      // Pass flag to initVisualization to prevent it from starting its own timer
-      await this.initVisualization(this.resettingFromPlay);
-    } else {
-      this.state.instancedSpheres = this.renderer.setupShaderInstancedMesh(2000000);
-    }
   }
 
   step() {
+    // Handle end of timeline
     if (this.state.i >= this.state.data.length - 1) {
       this.pause();
-      // Don't change the button text - just make it a play button
       this.state.playButton.classList.remove("pause");
       this.state.playButton.classList.add("play");
       return;
     }
 
+    // Advance to next year
     this.state.i++;
     const yearData = this.state.data[this.state.i];
     const yearColors = ColorProcessor.processYear(yearData, this.state);
 
+    // Update UI
     this.state.yearDisplay.textContent = yearData.year;
     document.getElementById("total-colors").textContent = this.state.colorData.length.toLocaleString();
+    document.getElementById("year-slider").value = yearData.year;
 
+    // Update visualization
     ColorProcessor.addYearColors(yearColors, this.state);
 
+    // Update clusters if active
     if (clusterState.isActive) {
       toggleClusterView(this.renderer, true, yearData.year, clusterState.currentK, this.state.instancedSpheres);
     }
-
-    const slider = document.getElementById("year-slider");
-    slider.value = yearData.year;
   }
 
-  async initVisualization(skipTimer = false) {
-    this._stopTimer();
+  // ===== SLIDER CONTROLS =====
 
-    document.getElementById("loading-message").textContent = "Loading...";
-    this.state.loading.isLoading = true;
-    this.state.playButton.disabled = true;
+  setupYearSlider() {
+    const slider = document.getElementById("year-slider");
+    slider.min = 1850;
+    slider.max = 2025;
+    slider.value = 1850;
 
-    this.state.data = await this.loadData();
-    this.state.instancedSpheres = this.renderer.setupShaderInstancedMesh(2000000);
+    slider.addEventListener("input", (e) => {
+      const targetYear = parseInt(e.target.value);
+      const targetIndex = this.state.data.findIndex((item) => item.year >= targetYear);
 
-    if (!this.sliderInitialized) {
-      this.setupYearSlider();
-      this.sliderInitialized = true;
+      if (targetIndex === -1) return;
+      if (this.state.playing) this.pause();
+
+      this.jumpToYear(targetIndex);
+    });
+  }
+
+  jumpToYear(index) {
+    const targetYear = this.state.data[index].year;
+    const slider = document.getElementById("year-slider");
+
+    // Reset if jumping backward
+    if (index < this.state.i) {
+      this.state.isJumping = true;
+      this.reset();
+      this.state.i = -1;
+      this.state.isJumping = false;
     }
 
-    // Update button state to show pause icon
-    this.state.playing = true;
-    this.state.playButton.textContent = "";
-    this.state.playButton.classList.remove("play");
-    this.state.playButton.classList.add("pause");
-
-    // Only set up timer if not reset from play
-    if (!skipTimer) {
-      this._startTimer();
+    // Step forward to target year
+    while (this.state.i < index) {
+      this.step();
     }
 
-    setTimeout(() => {
-      document.getElementById("loading-overlay").style.opacity = 0;
-      setTimeout(() => {
-        document.getElementById("loading-overlay").style.display = "none";
-      }, 500);
-      this.state.loading.isLoading = false;
-      this.state.playButton.disabled = false;
-    }, 100);
+    // Ensure slider shows correct year
+    slider.value = targetYear;
   }
 }
