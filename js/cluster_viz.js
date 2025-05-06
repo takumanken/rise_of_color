@@ -13,7 +13,7 @@ export const clusterState = {
 // Load the cluster data
 export async function loadClusterData() {
   try {
-    const response = await fetch("download_data/yearly_clustered_colors.json");
+    const response = await fetch("assets/yearly_clustered_colors.json");
     if (!response.ok) throw new Error("Failed to load cluster data");
 
     clusterState.clusterData = await response.json();

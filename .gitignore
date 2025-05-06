@@ -1,2 +1,2 @@
-download_data/*.json
+download_data/processed_data
 download_data/yearly_photos
