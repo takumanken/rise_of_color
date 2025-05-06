@@ -6,6 +6,20 @@ export class Timeline {
   constructor(state, renderer) {
     this.state = state;
     this.renderer = renderer;
+    this.resettingFromPlay = false; // Track if reset was called from play
+  }
+
+  // Helper methods for timer management
+  _startTimer() {
+    this._stopTimer(); // Always ensure only one timer is running
+    this.state.timer = setInterval(() => this.step(), CONFIG.animationSpeed);
+  }
+
+  _stopTimer() {
+    if (this.state.timer !== null) {
+      clearInterval(this.state.timer);
+      this.state.timer = null;
+    }
   }
 
   async loadData() {
@@ -20,15 +34,8 @@ export class Timeline {
 
   setupYearSlider() {
     const slider = document.getElementById("year-slider");
-    const minYearElem = document.getElementById("min-year");
-    const maxYearElem = document.getElementById("max-year");
-
     const minYear = 1850;
     const maxYear = 2025;
-
-    minYearElem.textContent = minYear;
-    maxYearElem.textContent = maxYear;
-
     slider.min = minYear;
     slider.max = maxYear;
     slider.value = minYear;
@@ -64,19 +71,35 @@ export class Timeline {
     slider.value = targetYear;
   }
 
-  play() {
+  async play() {
+    // Guard against double play clicks
+    if (this.state.playing) return;
+
+    // If we're at the end, restart first
+    if (this.state.i >= this.state.data.length - 1) {
+      this.resettingFromPlay = true;
+      await this.reset();
+      this.resettingFromPlay = false;
+    }
+
     this.state.playing = true;
-    this.state.playButton.textContent = "Pause";
-    this.state.timer = setInterval(() => this.step(), CONFIG.animationSpeed);
+    this.state.playButton.textContent = "";
+    this.state.playButton.classList.remove("play");
+    this.state.playButton.classList.add("pause");
+
+    this._startTimer();
   }
 
   pause() {
     this.state.playing = false;
-    this.state.playButton.textContent = "Resume";
-    clearInterval(this.state.timer);
+    this.state.playButton.textContent = "";
+    this.state.playButton.classList.remove("pause");
+    this.state.playButton.classList.add("play");
+
+    this._stopTimer();
   }
 
-  reset() {
+  async reset() {
     this.pause();
 
     this.state.i = -1;
@@ -85,17 +108,29 @@ export class Timeline {
     this.state.totalSpheres = 0;
     this.state.instanceCount = 0;
 
+    // Properly dispose of Three.js objects
     while (this.renderer.group.children.length > 0) {
-      this.renderer.group.remove(this.renderer.group.children[0]);
+      const obj = this.renderer.group.children[0];
+      if (obj.geometry) obj.geometry.dispose();
+      if (obj.material) {
+        if (Array.isArray(obj.material)) {
+          obj.material.forEach((mat) => mat.dispose());
+        } else {
+          obj.material.dispose();
+        }
+      }
+      this.renderer.group.remove(obj);
     }
 
     this.state.yearDisplay.textContent = "–";
     document.getElementById("total-colors").textContent = "0";
-    this.state.progressFill.style.width = "0%";
-    this.state.playButton.textContent = "Start";
+    this.state.playButton.textContent = "";
+    this.state.playButton.classList.remove("pause");
+    this.state.playButton.classList.add("play");
 
     if (!this.state.isJumping) {
-      this.initVisualization();
+      // Pass flag to initVisualization to prevent it from starting its own timer
+      await this.initVisualization(this.resettingFromPlay);
     } else {
       this.state.instancedSpheres = this.renderer.setupShaderInstancedMesh(2000000);
     }
@@ -104,7 +139,9 @@ export class Timeline {
   step() {
     if (this.state.i >= this.state.data.length - 1) {
       this.pause();
-      this.state.playButton.textContent = "Restart";
+      // Don't change the button text - just make it a play button
+      this.state.playButton.classList.remove("pause");
+      this.state.playButton.classList.add("play");
       return;
     }
 
@@ -114,7 +151,6 @@ export class Timeline {
 
     this.state.yearDisplay.textContent = yearData.year;
     document.getElementById("total-colors").textContent = this.state.colorData.length.toLocaleString();
-    this.state.progressFill.style.width = `${((this.state.i + 1) / this.state.data.length) * 100}%`;
 
     ColorProcessor.addYearColors(yearColors, this.state);
 
@@ -126,7 +162,9 @@ export class Timeline {
     slider.value = yearData.year;
   }
 
-  async initVisualization() {
+  async initVisualization(skipTimer = false) {
+    this._stopTimer();
+
     document.getElementById("loading-message").textContent = "Loading...";
     this.state.loading.isLoading = true;
     this.state.playButton.disabled = true;
@@ -134,11 +172,21 @@ export class Timeline {
     this.state.data = await this.loadData();
     this.state.instancedSpheres = this.renderer.setupShaderInstancedMesh(2000000);
 
-    this.state.playing = true;
-    this.state.playButton.textContent = "Pause";
-    this.step();
+    if (!this.sliderInitialized) {
+      this.setupYearSlider();
+      this.sliderInitialized = true;
+    }
 
-    this.state.timer = setInterval(() => this.step(), CONFIG.animationSpeed);
+    // Update button state to show pause icon
+    this.state.playing = true;
+    this.state.playButton.textContent = "";
+    this.state.playButton.classList.remove("play");
+    this.state.playButton.classList.add("pause");
+
+    // Only set up timer if not reset from play
+    if (!skipTimer) {
+      this._startTimer();
+    }
 
     setTimeout(() => {
       document.getElementById("loading-overlay").style.opacity = 0;
@@ -148,7 +196,5 @@ export class Timeline {
       this.state.loading.isLoading = false;
       this.state.playButton.disabled = false;
     }, 100);
-
-    this.setupYearSlider();
   }
 }

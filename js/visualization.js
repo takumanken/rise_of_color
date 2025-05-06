@@ -17,7 +17,6 @@ export const state = {
   instanceCount: 0,
   instancedSpheres: null,
   yearDisplay: null,
-  progressFill: null,
   playButton: null,
   loading: { isLoading: true },
   isJumping: false,

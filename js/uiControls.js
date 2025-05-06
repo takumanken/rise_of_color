@@ -11,7 +11,6 @@ export class UIControls {
 
   setupUI() {
     this.state.yearDisplay = document.getElementById("year-display");
-    this.state.progressFill = document.getElementById("progress-fill");
     this.state.playButton = document.getElementById("play-pause");
 
     this.state.playButton.addEventListener("click", () => {

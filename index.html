@@ -21,35 +21,28 @@
       <p class="subtitle">Every unique hue ever captured</p>
       
       <div id="year-display">0</div>
+      <div class="year-slider-container">
+        <div class="slider-track">
+          <span id="min-year">1850</span>
+          <input 
+            type="range" 
+            id="year-slider" 
+            min="1850" 
+            max="2025" 
+            value="1850"
+          >
+          <span id="max-year">2025</span>
+          <button id="play-pause" class="time-control-btn play"></button>
+        </div>
+      </div>
       <div id="stats-container">
         <span id="total-colors">0</span>
         <span class="stats-label">Unique Colors Captured in Photos (since 1850)</span>
       </div>
-      
-      <div id="progress-bar"><div id="progress-fill"></div></div>
     </div>
     
     <!-- Controls section -->
     <div class="controls-container">
-      <button id="play-pause">Start</button>
-      
-      <!-- Year slider control -->
-      <div class="slider-container" style="margin-top: 15px; margin-bottom: 15px;">
-        <label for="year-slider" style="display: block; margin-bottom: 5px;">Year</label>
-        <div style="display: flex; align-items: center;">
-          <span id="min-year" style="margin-right: 10px; min-width: 35px;">1850</span>
-          <input 
-            type="range" 
-            id="year-slider" 
-            min="0" 
-            max="100" 
-            value="0" 
-            style="flex-grow: 1;"
-          >
-          <span id="max-year" style="margin-left: 10px; min-width: 35px;">2023</span>
-        </div>
-      </div>
-      
       <div class="cluster-controls">
         <button id="toggle-clusters">Show Clusters</button>
         <select id="cluster-k" style="display: none;">

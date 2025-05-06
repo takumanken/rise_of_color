@@ -132,6 +132,7 @@ body {
 /* ===== STATS CONTAINER ===== */
 #stats-container {
   font-size: 1.2rem;
+  margin-top: 50px;
   margin-bottom: 40px;
   line-height: 1.3;
 }
@@ -372,4 +373,163 @@ canvas {
   font-size: 0.9rem;
   margin: 4px;
   max-width: 110px;
+}
+
+/* Year slider styling */
+.slider-container {
+  margin: 15px 0;
+  width: 100%;
+}
+
+.slider-container label {
+  display: block;
+  margin-bottom: 8px;
+  font-weight: 500;
+}
+
+.slider-track {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+#year-slider {
+  flex-grow: 1;
+  -webkit-appearance: none;
+  height: 4px;
+  background: #222222;
+  border-radius: 2px;
+  outline: none;
+  position: relative;
+  cursor: pointer;
+  transition: background 0.2s ease;
+}
+
+/* Enhance track on hover */
+#year-slider:hover {
+  background: #444444;
+}
+
+/* Focus state for accessibility */
+#year-slider:focus {
+  background: #444444;
+}
+
+/* Enhance thumb on hover and focus */
+#year-slider:hover::-webkit-slider-thumb,
+#year-slider:focus::-webkit-slider-thumb {
+  width: 8px;
+  height: 20px;
+  background: #ffffff;
+}
+
+#year-slider:hover::-moz-range-thumb,
+#year-slider:focus::-moz-range-thumb {
+  width: 8px;
+  height: 20px;
+  background: #ffffff;
+}
+
+/* Default thumb styling */
+#year-slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 6px;
+  height: 18px;
+  border-radius: 4px;
+  background: white;
+  cursor: pointer;
+  border: none;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.3);
+  transition: all 0.2s ease;
+  position: relative;
+  top: 50%;
+  transform: translateY(-50%);
+}
+
+#year-slider::-moz-range-thumb {
+  width: 6px;
+  height: 18px;
+  border-radius: 4px;
+  background: white;
+  cursor: pointer;
+  border: none;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.3);
+  transition: all 0.2s ease;
+}
+
+/* Progress track styling */
+#year-slider::-webkit-slider-runnable-track {
+  height: 4px;
+  cursor: pointer;
+}
+
+#year-slider::-moz-range-track {
+  height: 4px;
+  cursor: pointer;
+}
+
+/* Time control button styling */
+.time-control-btn {
+  background: rgba(255, 255, 255, 0.2);
+  color: white;
+  border: none;
+  width: 26px;
+  height: 26px;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  cursor: pointer;
+  transition: background 0.2s ease;
+  margin-left: 5px;
+  position: relative;
+}
+
+.time-control-btn:hover {
+  background: rgba(255, 255, 255, 0.3);
+}
+
+/* Play icon (triangle) */
+.time-control-btn.play::before {
+  content: '';
+  width: 0;
+  height: 0;
+  border-style: solid;
+  border-width: 5px 0 5px 8px;
+  border-color: transparent transparent transparent white;
+  margin-left: 2px; /* Optical alignment */
+}
+
+/* Pause icon (two vertical bars) */
+.time-control-btn.pause::before,
+.time-control-btn.pause::after {
+  content: '';
+  position: absolute;
+  width: 3px;
+  height: 10px;
+  background: white;
+}
+
+.time-control-btn.pause::before {
+  left: 9px;
+}
+
+.time-control-btn.pause::after {
+  right: 9px;
+}
+
+/* Modify the slider track to accommodate the button */
+.year-slider-container .slider-track {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+#min-year, #max-year {
+  min-width: 40px;
+  font-variant-numeric: tabular-nums;
+  color: rgba(255, 255, 255, 0.5);
+  font-size: 0.75rem;
 }
