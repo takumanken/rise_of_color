@@ -1,38 +1,66 @@
-# Interactive 3-D Colour Wheel
+# Rise of Color
 
-This project is an interactive 3-D color wheel built using Three.js. It allows users to explore a colorful 3D representation of colors arranged in a circular pattern.
+## About the Project
 
-## Project Structure
+Rise of Color visualizes the historical emergence of colors in photography, showing when new colors appeared and how the overall color palette expanded through the decades. The visualization arranges colors in a 3D color space based on hue, saturation, and lightness, creating a spherical representation of the complete color spectrum.
 
-- `index.html`: The main HTML document that serves as the entry point for the application.
-- `css/style.css`: Contains the styles for the application, defining the layout, colors, and other visual aspects.
-- `js/main.js`: Implements the interactive features of the 3D color wheel, including the Three.js setup and rendering logic.
-- `.gitignore`: Specifies files and directories to be ignored by Git.
-- `README.md`: Documentation for the project.
+## Data Source
+Historical images from [Wikimedia Commons](https://commons.wikimedia.org/wiki/Commons)
 
-## Setup Instructions
+## How the 3D Visualization Works
 
-1. **Clone the repository**:
-   ```bash
-   git clone https://github.com/yourusername/color-wheel-3d.git
-   ```
+### Color Space Structure
 
-2. **Navigate to the project directory**:
-   ```bash
-   cd color-wheel-3d
-   ```
+The visualization organizes colors in a 3D spherical space:
 
-3. **Open `index.html` in a web browser** to view the interactive 3-D color wheel.
+1. **Position Mapping**:
+   - **Hue**: Mapped to the angle around the sphere (longitude)
+   - **Lightness**: Mapped to the vertical position (latitude)
+   - **Saturation**: Mapped to the distance from the center axis
 
-## Usage
+2. **Special Handling**:
+   - **Grayscale Colors**: Placed along the central vertical axis
+   - **Bright Colors**: Positioned toward the top of the sphere
+   - **Dark Colors**: Positioned toward the bottom of the sphere
+   - **Vivid Colors**: Positioned farther from the center
+   - **Muted Colors**: Positioned closer to the center
 
-- Use your mouse to rotate, zoom, and pan around the color wheel.
-- Explore the different colors and their arrangements.
+### Technical Implementation
 
-## Contributing
+The visualization is built using modern web technologies:
 
-Contributions are welcome! Please feel free to submit a pull request or open an issue for any suggestions or improvements.
+1. **Rendering Engine**: Three.js for WebGL-based 3D graphics
 
-## License
+### Visualization Construction
 
-This project is licensed under the MIT License. See the LICENSE file for more details.
+The entire 3D structure is built incrementally from thousands of individual spheres:
+
+1. **Individual Color Representation**:
+   - Each small sphere represents a unique color that appeared in photographs from a specific year
+   - Once a color appears, it remains in the visualization permanently
+   - The visualization only adds new colors that haven't been seen before
+
+2. **Sphere Positioning Logic**:
+   - **Spherical Coordinates**: Each color is converted from RGB to HSL (Hue, Saturation, Lightness)
+   - **Angle (θ)**: The hue value (0-360°) determines the angle around the central axis
+   - **Height (y)**: Calculated from lightness - brighter colors appear higher
+   - **Distance from Axis (r)**: Determined by saturation - more saturated colors appear farther from center
+   - **Grayscale Colors**: These have special placement along the vertical axis with small random angles
+
+3. **Chronological Construction**:
+   - The visualization begins empty and adds colors year by year
+   - As each year progresses, newly discovered colors appear as spheres in their calculated positions
+   - Earlier years contribute fewer colors, while later years (especially after the introduction of color photography) contribute many more
+
+### Color Clustering Visualization
+
+In addition to showing individual color points, the visualization includes a powerful clustering feature that reveals dominant color patterns over time:
+
+1. **Clustering Mode**:
+   - Toggle between "Show All Colors" and "Show Clusters" using the button in the control panel
+   - When clustering is enabled, individual color points fade and cluster spheres become visible
+   - Each cluster represents a group of similar colors, with the sphere positioned at the average color
+
+2. **K-means Clustering Algorithm**:
+   - The visualization uses K-means clustering to group similar colors based on their RGB values
+   - Multiple cluster resolutions are available through the dropdown menu (4, 8, 16, 32 or 64 clusters)
