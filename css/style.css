@@ -15,7 +15,7 @@ body {
   width: 30%;
   min-width: 300px;
   height: 100vh;
-  padding: 40px 40px 40px 80px;
+  padding: 40px 40px 20px 80px;
   display: flex;
   flex-direction: column;
   justify-content: space-between;
@@ -49,6 +49,61 @@ body {
   position: relative;
   overflow: hidden;
   flex-shrink: 0;
+}
+
+/* Simplified visualization controls - text only */
+.visualization-controls {
+  position: absolute;
+  bottom: 0px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  z-index: 100;
+  pointer-events: none;
+}
+
+.view-selector {
+  background: transparent;
+  backdrop-filter: none;
+  border: none;
+  padding: 8px 0;
+  display: flex;
+  align-items: center;
+  pointer-events: auto;
+  box-shadow: none;
+}
+
+.view-label, .view-selector button, .view-divider {
+  display: inline-flex;
+  align-items: center;
+  height: 20px;
+  line-height: 20px;
+  font-size: 0.8rem;
+  vertical-align: middle;
+}
+
+.view-divider {
+  color: rgba(255, 255, 255, 0.3);
+  padding: 0 8px;
+  user-select: none;
+}
+
+.view-selector button {
+  background: transparent;
+  border: none;
+  color: rgba(255, 255, 255, 0.7);
+  padding: 0;
+  cursor: pointer;
+  transition: color 0.2s ease;
+}
+
+.view-selector button:hover {
+  color: white;
+}
+
+/* Hide unused elements */
+#view-top::before, #view-bottom::before, #view-default::before {
+  display: none;
 }
 
 /* ===== TYPOGRAPHY ===== */
@@ -104,7 +159,7 @@ button {
   color: white;
   border: none;
   padding: 10px 20px;
-  margin: 0 10px 10px 0;
+  margin: 0;
   cursor: pointer;
   border-radius: 4px;
   font-size: 1rem;
@@ -113,6 +168,41 @@ button {
 
 button:hover {
   background: rgba(255, 255, 255, 0.3);
+}
+
+.view-controls {
+  margin-top: 15px;
+}
+
+.view-controls button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(255, 255, 255, 0.15);
+  padding: 8px 15px;
+}
+
+.view-controls button::before {
+  content: '';
+  display: inline-block;
+  width: 12px;
+  height: 12px;
+  margin-right: 6px;
+  background-size: contain;
+  background-repeat: no-repeat;
+}
+
+#view-top::before {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' fill='white' viewBox='0 0 16 16'%3E%3Cpath d='M8 4a.5.5 0 0 1 .5.5v5.793l2.146-2.147a.5.5 0 0 1 .708.708l-3 3a.5.5 0 0 1-.708 0l-3-3a.5.5 0 1 1 .708-.708L7.5 10.293V4.5A.5.5 0 0 1 8 4z'/%3E%3C/svg%3E");
+  transform: rotate(180deg);
+}
+
+#view-bottom::before {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' fill='white' viewBox='0 0 16 16'%3E%3Cpath d='M8 4a.5.5 0 0 1 .5.5v5.793l2.146-2.147a.5.5 0 0 1 .708.708l-3 3a.5.5 0 0 1-.708 0l-3-3a.5.5 0 1 1 .708-.708L7.5 10.293V4.5A.5.5 0 0 1 8 4z'/%3E%3C/svg%3E");
+}
+
+#view-default::before {
+  display: none;
 }
 
 /* ===== PROGRESS BAR ===== */
@@ -239,4 +329,47 @@ canvas {
   text-align: center;
   font-weight: 300;
   letter-spacing: 0.5px;
+}
+
+/* Visualization controls */
+.viz-controls {
+  position: absolute;
+  bottom: 20px;
+  left: 20px;
+  display: flex;
+  flex-wrap: wrap;
+  max-width: 240px;
+  z-index: 100;
+  background: rgba(0, 0, 0, 0.6);
+  padding: 10px;
+  border-radius: 5px;
+  backdrop-filter: blur(5px);
+}
+
+.viz-controls button {
+  background: rgba(255, 255, 255, 0.2);
+  color: white;
+  border: none;
+  padding: 8px 12px;
+  margin: 4px;
+  cursor: pointer;
+  border-radius: 4px;
+  font-size: 0.9rem;
+  transition: background 0.2s ease;
+}
+
+.viz-controls button:hover {
+  background: rgba(255, 255, 255, 0.3);
+}
+
+.viz-controls select {
+  background: rgba(0, 0, 0, 0.7);
+  color: white;
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  padding: 7px 10px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 0.9rem;
+  margin: 4px;
+  max-width: 110px;
 }

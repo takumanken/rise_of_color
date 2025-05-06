@@ -46,6 +46,43 @@ function setupUI() {
       pause();
     }
   });
+
+  // Add view control handlers
+  document.getElementById("view-top").addEventListener("click", () => {
+    animateCameraTo({
+      x: 0,
+      y: 1, // Direction pointing up
+      z: 0,
+    });
+  });
+
+  document.getElementById("view-bottom").addEventListener("click", () => {
+    animateCameraTo({
+      x: 0,
+      y: -1, // Direction pointing down
+      z: 0,
+    });
+  });
+
+  document.getElementById("view-default").addEventListener("click", () => {
+    const initialPos = CONFIG.camera.initialPosition;
+    const initialVector = new THREE.Vector3(initialPos[0], initialPos[1], initialPos[2]);
+    const initialSpherical = new THREE.Spherical().setFromVector3(initialVector);
+
+    const camera = renderer.camera;
+    const currentPosition = camera.position.clone();
+    const currentSpherical = new THREE.Spherical().setFromVector3(currentPosition);
+
+    const targetSpherical = new THREE.Spherical(currentSpherical.radius, initialSpherical.phi, currentSpherical.theta);
+
+    const targetVector = new THREE.Vector3().setFromSpherical(targetSpherical);
+
+    animateCameraTo({
+      x: targetVector.x,
+      y: targetVector.y,
+      z: targetVector.z,
+    });
+  });
 }
 
 /**
@@ -262,6 +299,54 @@ function setupClusterControls() {
       toggleClusterView(renderer, true, state.data[state.i].year, parseInt(kSelect.value), state.instancedSpheres);
     }
   });
+}
+
+/**
+ * Camera Animation Function - Moves along sphere surface
+ */
+function animateCameraTo(targetDirection) {
+  const camera = renderer.camera;
+  const startPosition = camera.position.clone();
+  const radius = startPosition.length();
+  const startSpherical = new THREE.Spherical().setFromVector3(startPosition);
+
+  const targetVector = new THREE.Vector3(targetDirection.x, targetDirection.y, targetDirection.z)
+    .normalize()
+    .multiplyScalar(radius);
+  const targetSpherical = new THREE.Spherical().setFromVector3(targetVector);
+
+  // Take shortest path around the sphere
+  if (Math.abs(targetSpherical.phi - startSpherical.phi) > Math.PI) {
+    if (targetSpherical.phi > startSpherical.phi) {
+      targetSpherical.phi -= 2 * Math.PI;
+    } else {
+      targetSpherical.phi += 2 * Math.PI;
+    }
+  }
+
+  const duration = 1500;
+  const startTime = Date.now();
+
+  function animate() {
+    const elapsed = Date.now() - startTime;
+    const progress = Math.min(elapsed / duration, 1);
+    const easeProgress = 1 - Math.pow(1 - progress, 3); // Cubic ease out
+
+    const currentSpherical = new THREE.Spherical(
+      radius,
+      startSpherical.phi + (targetSpherical.phi - startSpherical.phi) * easeProgress,
+      startSpherical.theta + (targetSpherical.theta - startSpherical.theta) * easeProgress
+    );
+
+    camera.position.setFromSpherical(currentSpherical);
+    camera.lookAt(0, 0, 0);
+
+    if (progress < 1) {
+      requestAnimationFrame(animate);
+    }
+  }
+
+  animate();
 }
 
 /**

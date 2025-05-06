@@ -35,7 +35,7 @@
       
       <div class="cluster-controls">
         <button id="toggle-clusters">Show Clusters</button>
-        <select id="cluster-k" style="display: none;">
+        <select id="cluster-k">
           <option value="4">4 Clusters</option>
           <option value="8">8 Clusters</option>
           <option value="16" selected>16 Clusters</option>
@@ -55,8 +55,20 @@
   </div>
   
   <!-- Right visualization area -->
-  <div class="visualization"></div>
-  
+  <div class="visualization">
+    <!-- View controls -->
+    <div class="visualization-controls">
+      <div class="view-selector">
+        <span class="view-label">View:</span>
+        <button id="view-default">Default</button>
+        <span class="view-divider">|</span>
+        <button id="view-top">Top</button>
+        <span class="view-divider">|</span>
+        <button id="view-bottom">Bottom</button>
+      </div>
+    </div>
+  </div>
+
   <!-- ThreeJS dependencies -->
   <script type="importmap">
   {
