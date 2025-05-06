@@ -3,24 +3,24 @@ import { CONFIG, quantizeColor, calculatePosition } from "./config.js";
 import { Renderer } from "./renderer.js";
 import { loadClusterData, toggleClusterView, clusterState } from "./cluster_viz.js";
 
-// Application State
+/**
+ * Application State
+ */
 const state = {
-  data: [], // All years from JSON
+  data: [], // Color data by year
   i: -1, // Current year index
   playing: false, // Animation state
   timer: null, // Animation timer
-  colorData: [], // Processed colors
+  colorData: [], // All processed colors
   seen: new Set(), // Unique colors tracker
   totalSpheres: 0, // Total sphere count
-  instanceCount: 0, // Instance tracker
-  instancedSpheres: null, // Instanced mesh reference
-  yearDisplay: null, // UI elements
+  instanceCount: 0, // Instance counter
+  instancedSpheres: null, // ThreeJS instanced mesh
+  yearDisplay: null, // UI element references
   progressFill: null,
   playButton: null,
   loading: {
     isLoading: true,
-    dataReady: false,
-    message: "Loading...",
   },
 };
 
@@ -28,7 +28,9 @@ const state = {
 const renderer = new Renderer();
 const dummy = new THREE.Object3D();
 
-// UI Setup
+/**
+ * UI Setup
+ */
 function setupUI() {
   state.yearDisplay = document.getElementById("year-display");
   state.progressFill = document.getElementById("progress-fill");
@@ -46,7 +48,9 @@ function setupUI() {
   });
 }
 
-// Data Handling
+/**
+ * Data Processing Functions
+ */
 async function loadData() {
   try {
     const response = await fetch("assets/unique_colors_history.json");
@@ -112,7 +116,9 @@ function addYearColors(yearColors) {
   spheres.instanceMatrix.needsUpdate = true;
 }
 
-// Animation Control
+/**
+ * Animation Control Functions
+ */
 function play() {
   state.playing = true;
   state.playButton.textContent = "Pause";
@@ -127,6 +133,8 @@ function pause() {
 
 function reset() {
   pause();
+
+  // Reset state
   state.i = -1;
   state.colorData = [];
   state.seen = new Set();
@@ -179,29 +187,31 @@ function animate() {
   renderer.render();
 }
 
-// Initialization
+/**
+ * Initialization Functions
+ */
 async function initVisualization() {
   // Show loading state
   document.getElementById("loading-message").textContent = "Loading...";
   state.loading.isLoading = true;
   state.playButton.disabled = true;
 
-  // Load data with progress indication if possible
+  // Load data
   state.data = await loadData();
 
   // Create mesh with capacity estimate
   const estimatedColors = 2000000;
   state.instancedSpheres = renderer.setupShaderInstancedMesh(estimatedColors);
 
-  // Process first step immediately to ensure content is ready
+  // Process first step immediately
   state.playing = true;
   state.playButton.textContent = "Pause";
-  step(); // Process first frame immediately
+  step();
 
-  // Start the animation timer for subsequent frames
+  // Start animation timer
   state.timer = setInterval(step, CONFIG.animationSpeed);
 
-  // Now hide loading overlay after first frame is processed
+  // Hide loading overlay
   setTimeout(() => {
     document.getElementById("loading-overlay").style.opacity = 0;
     setTimeout(() => {
@@ -209,7 +219,7 @@ async function initVisualization() {
     }, 500);
     state.loading.isLoading = false;
     state.playButton.disabled = false;
-  }, 0); // Reduced to minimize waiting
+  }, 100);
 }
 
 function setupClusterControls() {
@@ -254,7 +264,9 @@ function setupClusterControls() {
   });
 }
 
-// Initialize application
+/**
+ * Initialize application
+ */
 (async function init() {
   setupUI();
   await initVisualization();

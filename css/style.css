@@ -62,8 +62,7 @@ body {
 
 .subtitle {
   font-size: 1.1rem;
-  margin-bottom: 40px;
-  margin-top: 10px;
+  margin: 10px 0 40px 0;
   opacity: 0.7;
 }
 
@@ -71,8 +70,7 @@ body {
   font-size: 5.5rem;
   font-weight: 900;
   line-height: 1;
-  margin-top: 20px;
-  margin-bottom: 10px;
+  margin: 20px 0 10px 0;
   letter-spacing: -2px;
 }
 
@@ -86,7 +84,6 @@ body {
 #total-colors {
   font-weight: 200;
   font-size: 1.4rem;
-  
 }
 
 .stats-label {
@@ -107,11 +104,11 @@ button {
   color: white;
   border: none;
   padding: 10px 20px;
-  margin-right: 10px;
-  margin-bottom: 10px;
+  margin: 0 10px 10px 0;
   cursor: pointer;
   border-radius: 4px;
   font-size: 1rem;
+  transition: background 0.2s ease;
 }
 
 button:hover {
@@ -132,7 +129,6 @@ button:hover {
   height: 100%;
   width: 0%;
   background: white;
-  /* background: linear-gradient(to right, #ff3e9d, #0ff0fc); */
   transition: width 0.3s ease;
 }
 
@@ -149,6 +145,11 @@ button:hover {
   border-radius: 5px;
   cursor: pointer;
   font-size: 1rem;
+  transition: border-color 0.2s ease;
+}
+
+.cluster-controls select:hover {
+  border-color: rgba(255, 255, 255, 0.5);
 }
 
 /* ===== CANVAS ===== */
@@ -177,10 +178,12 @@ canvas {
 .credits a {
   color: rgba(255, 255, 255, 0.8);
   text-decoration: none;
+  transition: opacity 0.2s ease;
 }
 
 .credits a:hover {
   text-decoration: underline;
+  opacity: 1;
 }
 
 /* ===== LOADING OVERLAY ===== */
