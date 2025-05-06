@@ -20,7 +20,7 @@ const state = {
   loading: {
     isLoading: true,
     dataReady: false,
-    message: "Loading visualization data...",
+    message: "Loading...",
   },
 };
 
@@ -188,13 +188,20 @@ async function initVisualization() {
 
   // Load data with progress indication if possible
   state.data = await loadData();
-  document.getElementById("loading-message").textContent = "Loading...";
 
   // Create mesh with capacity estimate
   const estimatedColors = 2000000;
   state.instancedSpheres = renderer.setupShaderInstancedMesh(estimatedColors);
 
-  // Hide loading overlay when ready
+  // Process first step immediately to ensure content is ready
+  state.playing = true;
+  state.playButton.textContent = "Pause";
+  step(); // Process first frame immediately
+
+  // Start the animation timer for subsequent frames
+  state.timer = setInterval(step, CONFIG.animationSpeed);
+
+  // Now hide loading overlay after first frame is processed
   setTimeout(() => {
     document.getElementById("loading-overlay").style.opacity = 0;
     setTimeout(() => {
@@ -202,7 +209,7 @@ async function initVisualization() {
     }, 500);
     state.loading.isLoading = false;
     state.playButton.disabled = false;
-  }, 500);
+  }, 0); // Reduced to minimize waiting
 }
 
 function setupClusterControls() {
