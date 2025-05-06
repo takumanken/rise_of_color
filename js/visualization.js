@@ -182,13 +182,13 @@ function animate() {
 // Initialization
 async function initVisualization() {
   // Show loading state
-  document.getElementById("loading-message").textContent = "Loading color data...";
+  document.getElementById("loading-message").textContent = "Loading...";
   state.loading.isLoading = true;
   state.playButton.disabled = true;
 
   // Load data with progress indication if possible
   state.data = await loadData();
-  document.getElementById("loading-message").textContent = "Initializing visualization...";
+  document.getElementById("loading-message").textContent = "Loading...";
 
   // Create mesh with capacity estimate
   const estimatedColors = 2000000;
