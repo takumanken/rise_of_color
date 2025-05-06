@@ -156,7 +156,7 @@ function step() {
 
   // Update UI
   state.yearDisplay.textContent = yearData.year;
-  document.getElementById("total-colors").textContent = state.colorData.length;
+  document.getElementById("total-colors").textContent = state.colorData.length.toLocaleString();
   state.progressFill.style.width = `${((state.i + 1) / state.data.length) * 100}%`;
 
   // Add spheres
