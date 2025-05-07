@@ -1,156 +1,113 @@
+#!/usr/bin/env python3
+"""
+Extract unique colors from photographs by year
+Only keeps colors that weren't seen in any previous year
+"""
 import os
-import glob
 import json
-import random
-from PIL import Image
+import pathlib
+import time
+from concurrent.futures import ProcessPoolExecutor
 import numpy as np
-import argparse
-from collections import defaultdict
+from PIL import Image
+import math
 
-def extract_unique_colors_by_year(base_dir="yearly_photos", output_file="unique_colors_history.json", 
-                                 max_pixels=10000, sample_method="resize"):
-    """
-    Extract colors from images by year, only keeping colors that weren't seen in previous years.
+#############################################
+# CONFIGURATION
+#############################################
+BASE_DIR = "yearly_photos"                 # Base directory containing year folders
+OUTPUT_FILE = "unique_colors_history.json" # Output JSON file path
+MAX_WORKERS = os.cpu_count()               # Parallel processing workers
+RESIZE_TO = 250                            # Smaller resize for better performance
+CHUNKSIZE = 8                              # Larger chunks for better parallel performance
+COLOR_DEPTH = 5.5                          # Match frontend color depth
+#############################################
+
+def quantize_colors(flat_rgb):
+    """Quantize colors using exactly the same logic as the frontend"""
+    # Use same formula as JavaScript: factor = Math.pow(2, 8 - CONFIG.colorDepth)
+    factor = 2 ** (8 - COLOR_DEPTH)
     
-    Args:
-        base_dir: Base directory containing year folders
-        output_file: File to save the JSON output
-        max_pixels: Maximum number of pixels to extract per image
-        sample_method: Method to reduce pixels ('resize' or 'random')
-    """
-    # Check if base directory exists
-    if not os.path.exists(base_dir):
-        print(f"Error: Directory '{base_dir}' not found.")
-        return
+    # Apply quantization (floor(value/factor)*factor)
+    r = np.floor(flat_rgb[:, 0] / factor) * factor
+    g = np.floor(flat_rgb[:, 1] / factor) * factor
+    b = np.floor(flat_rgb[:, 2] / factor) * factor
     
-    # Find all year directories and sort them chronologically
-    year_dirs = [d for d in glob.glob(os.path.join(base_dir, "*")) if os.path.isdir(d)]
-    if not year_dirs:
-        print(f"No year directories found in {base_dir}")
-        return
-    
-    # Filter and sort numeric year directories
-    valid_year_dirs = []
-    for year_dir in year_dirs:
-        year_name = os.path.basename(year_dir)
-        try:
-            year_int = int(year_name)
-            valid_year_dirs.append((year_int, year_dir))
-        except ValueError:
-            print(f"Skipping non-year directory: {year_name}")
-            continue
-    
-    valid_year_dirs.sort()  # Sort by year
-    
-    print(f"Found {len(valid_year_dirs)} valid year directories")
-    
-    # Set to track all colors seen so far
-    all_seen_colors = set()
-    
-    # Final data structure - an array of year objects
-    result_data = []
-    
-    # Process each year directory chronologically
-    for year_int, year_dir in valid_year_dirs:
-        print(f"Processing year: {year_int}")
-        
-        # Set to track unique colors in this year
-        year_colors = set()
-        
-        # Get image files in this year (excluding subdirectories)
-        image_files = []
-        for ext in ['jpg', 'jpeg', 'png', 'gif']:
-            image_files.extend(glob.glob(os.path.join(year_dir, f"*.{ext}")))
-            image_files.extend(glob.glob(os.path.join(year_dir, f"*.{ext.upper()}")))
-        
-        if not image_files:
-            print(f"  No images found in year {year_int}")
-            continue
-        
-        print(f"  Found {len(image_files)} images")
-        
-        # Process each image
-        for img_path in image_files:
-            img_name = os.path.basename(img_path)
-            print(f"    Processing {img_name}")
+    # Pack into integers
+    return (r.astype(np.uint32) << 16) | (g.astype(np.uint32) << 8) | b.astype(np.uint32)
+
+def colors_in_image(path):
+    """Extract unique colors from an image as packed integers"""
+    try:
+        with Image.open(path) as img:
+            img.thumbnail((RESIZE_TO, RESIZE_TO), Image.LANCZOS)
+            arr = np.asarray(img.convert("RGB"), dtype=np.float32)  # Use float32 for division
+            flat_rgb = arr.reshape(-1, 3)
             
-            try:
-                # Open image and convert to RGB
-                with Image.open(img_path) as img:
-                    if img.mode != 'RGB':
-                        img = img.convert('RGB')
-                    
-                    # Get pixel data based on sampling method
-                    original_size = img.width * img.height
-                    
-                    if sample_method == "resize" and original_size > max_pixels:
-                        # Resize image to have approximately max_pixels
-                        scale_factor = np.sqrt(max_pixels / original_size)
-                        new_width = max(1, int(img.width * scale_factor))
-                        new_height = max(1, int(img.height * scale_factor))
-                        img = img.resize((new_width, new_height), Image.LANCZOS)
-                        img_array = np.array(img)
-                        pixels = img_array.reshape(-1, 3)
-                    
-                    elif sample_method == "random" and original_size > max_pixels:
-                        # Random sampling of pixels
-                        img_array = np.array(img)
-                        flat_pixels = img_array.reshape(-1, 3)
-                        sample_indices = random.sample(range(len(flat_pixels)), max_pixels)
-                        pixels = flat_pixels[sample_indices]
-                    
-                    else:
-                        # Use all pixels if under the limit
-                        img_array = np.array(img)
-                        pixels = img_array.reshape(-1, 3)
-                    
-                    # Convert NumPy uint8 values to standard Python ints and add to set
-                    for pixel in pixels:
-                        # Convert each uint8 value to int before creating the tuple
-                        color_tuple = (int(pixel[0]), int(pixel[1]), int(pixel[2]))
-                        year_colors.add(color_tuple)
-                    
-                    print(f"      Added colors from {len(pixels)} pixels to year set")
+            # Apply color quantization exactly like the frontend
+            packed = quantize_colors(flat_rgb)
             
-            except Exception as e:
-                print(f"      Error processing {img_name}: {e}")
-        
-        # Find colors unique to this year (not seen in previous years)
-        unique_colors = year_colors - all_seen_colors
-        print(f"  Found {len(unique_colors)} unique colors in year {year_int}")
-        
-        # Add these colors to our "seen" set for future years
-        all_seen_colors.update(year_colors)
-        
-        # Add to result data
-        if unique_colors:
-            # Convert tuples back to lists for JSON serialization
-            unique_colors_list = [list(color) for color in unique_colors]
-            result_data.append({
-                "year": year_int,
-                "color": unique_colors_list
+            return np.unique(packed)
+    except Exception:
+        return np.array([], dtype=np.uint32)
+
+def extract_unique_colors_by_year():
+    """Extract colors from images by year, only keeping colors that weren't seen in previous years."""
+    start_time = time.time()
+    
+    # Find and sort year directories
+    base = pathlib.Path(BASE_DIR)
+    year_dirs = sorted(
+        (int(p.name), p) for p in base.iterdir() 
+        if p.is_dir() and p.name.isdigit()
+    )
+    
+    print(f"Found {len(year_dirs)} year directories")
+    seen = set()  # Track all colors seen so far
+    result = []   # Final data structure
+    
+    # Process years sequentially
+    with ProcessPoolExecutor(max_workers=MAX_WORKERS) as pool:
+        for year, year_path in year_dirs:
+            print(f"Processing year {year}...")
+            
+            # Find all image files
+            image_files = [
+                f for f in year_path.iterdir() 
+                if f.is_file() and f.suffix.lower() in ('.jpg', '.jpeg', '.png', '.gif')
+            ]
+            
+            if not image_files:
+                continue
+                
+            # Process images in parallel
+            year_colors = set()
+            for color_array in pool.map(colors_in_image, image_files, chunksize=CHUNKSIZE):
+                if len(color_array) > 0:
+                    year_colors.update(color_array)
+            
+            # Find colors unique to this year
+            unique = year_colors.difference(seen)
+            seen.update(year_colors)
+            
+            # Add to results
+            result.append({
+                "year": year,
+                "color": [int(x) for x in unique]
             })
+            
+            print(f"  Found {len(unique)} new colors")
     
     # Save to JSON file
-    with open(output_file, 'w') as f:
-        json.dump(result_data, f)
+    with open(OUTPUT_FILE, 'w') as f:
+        json.dump(result, f)
     
-    print(f"\nUnique color extraction complete! Data saved to {output_file}")
-    print(f"Processed {len(valid_year_dirs)} years")
+    # Calculate file size
+    file_size = os.path.getsize(OUTPUT_FILE) / (1024 * 1024)  # Size in MB
     
-    # Report on the total unique colors found
-    total_unique = sum(len(year_data["color"]) for year_data in result_data)
-    print(f"Total unique colors across all years: {total_unique}")
+    print(f"Complete! Processed {len(year_dirs)} years")
+    print(f"Output file size: {file_size:.2f} MB")
+    print(f"Total processing time: {time.time() - start_time:.1f} seconds")
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description="Extract unique colors by year")
-    parser.add_argument("--base-dir", default="yearly_photos", help="Base directory containing year folders")
-    parser.add_argument("--output", default="unique_colors_history.json", help="Output JSON file path")
-    parser.add_argument("--max-pixels", type=int, default=10000, 
-                       help="Maximum number of pixels to extract per image")
-    parser.add_argument("--sample-method", choices=["resize", "random"], default="resize",
-                       help="Method to reduce pixels: resize image or random sampling")
-    
-    args = parser.parse_args()
-    
-    extract_unique_colors_by_year(args.base_dir, args.output, args.max_pixels, args.sample_method)
+    extract_unique_colors_by_year()

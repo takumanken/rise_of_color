@@ -2,7 +2,7 @@
 export const CONFIG = {
   // STRUCTURE
   radius: 40,
-  smallSphereRadius: 0.05,
+  smallSphereRadius: 0.1,
   shells: 50,
   rotationSpeed: 0.0015,
   animationSpeed: 300,
@@ -20,10 +20,6 @@ export const CONFIG = {
       initialDistance: 280,
     },
   },
-
-  // COLOR PROCESSING
-  grayscaleThreshold: 0.025,
-  colorDepth: 7,
 
   // LIGHTING
   lighting: {
@@ -147,19 +143,15 @@ export function greyAngle(rgb) {
   return (hash / 360) * Math.PI * 2;
 }
 
-export function quantizeColor(rgb) {
-  const factor = Math.pow(2, 8 - CONFIG.colorDepth);
-  return [
-    Math.floor(rgb[0] / factor) * factor,
-    Math.floor(rgb[1] / factor) * factor,
-    Math.floor(rgb[2] / factor) * factor,
-  ];
-}
-
 // POSITION CALCULATION
-export function calculatePosition(rgb) {
+export function calculatePosition(color) {
+  const rgb = color.rgb || color; // Support both raw RGB arrays and color objects
   const [h, s, l] = rgbToHsl(...rgb);
-  const isGrayscale = s < CONFIG.grayscaleThreshold;
+
+  // Use the pre-processed isGrayscale property if available, otherwise
+  // don't attempt to re-determine grayscale status
+  const isGrayscale = color.isGrayscale !== undefined ? color.isGrayscale : false;
+
   const c = (1 - Math.abs(2 * l - 1)) * s;
   const R = CONFIG.radius;
 
@@ -169,7 +161,8 @@ export function calculatePosition(rgb) {
     radialJitter = 1.0;
 
   if (CONFIG.jitter.enabled) {
-    const jitter = (1.0 / (Math.pow(2, CONFIG.colorDepth) * 1.6)) * CONFIG.jitter.intensity;
+    // Fixed jitter value instead of depending on colorDepth
+    const jitter = 0.005 * CONFIG.jitter.intensity;
     thetaJitter = (Math.random() - 0.5) * jitter * CONFIG.jitter.thetaStrength;
     phiJitter = (Math.random() - 0.5) * jitter * CONFIG.jitter.phiStrength;
     radialJitter =

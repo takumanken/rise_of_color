@@ -1,5 +1,5 @@
 import * as THREE from "three";
-import { quantizeColor, calculatePosition } from "./config.js";
+import { calculatePosition } from "./config.js";
 
 export class ColorProcessor {
   constructor(state, renderer) {
@@ -10,19 +10,34 @@ export class ColorProcessor {
 
   static processYear(yearData, state) {
     const yearColors = [];
-    const colors = yearData.color || [];
 
-    for (const rgb of colors) {
-      const quantizedRgb = quantizeColor(rgb);
-      const key = quantizedRgb.join(",");
+    for (const packedColor of yearData.color) {
+      // Unpack RGB components
+      const r = (packedColor >> 16) & 255;
+      const g = (packedColor >> 8) & 255;
+      const b = packedColor & 255;
 
-      if (!state.seen.has(key)) {
-        state.seen.add(key);
-        const position = calculatePosition(quantizedRgb);
-        yearColors.push(position);
-        state.colorData.push(position);
-        state.totalSpheres++;
-      }
+      // Create color key (no quantization)
+      const colorKey = `${r},${g},${b}`;
+
+      // Skip already seen colors
+      if (state.seen.has(colorKey)) continue;
+      state.seen.add(colorKey);
+
+      // Calculate position with original color
+      const colorData = calculatePosition([r, g, b]);
+
+      // Add normalized RGB values for rendering
+      colorData.r = r / 255;
+      colorData.g = g / 255;
+      colorData.b = b / 255;
+
+      yearColors.push(colorData);
+    }
+
+    // Add to master list without spread
+    for (let i = 0; i < yearColors.length; i++) {
+      state.colorData.push(yearColors[i]);
     }
 
     return yearColors;
@@ -45,7 +60,7 @@ export class ColorProcessor {
       const dotScale = 0.8 + colorData.c * 0.4;
       scaleAttr.setX(state.instanceCount, dotScale);
 
-      colorAttr.setXYZ(state.instanceCount, colorData.rgb[0] / 255, colorData.rgb[1] / 255, colorData.rgb[2] / 255);
+      colorAttr.setXYZ(state.instanceCount, colorData.r, colorData.g, colorData.b);
 
       spheres.setMatrixAt(state.instanceCount, dummy.matrix);
       state.instanceCount++;

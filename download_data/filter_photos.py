@@ -1,194 +1,194 @@
-import os
-import sys
-import shutil
-import numpy as np
-from glob import glob
-from PIL import Image, ImageStat
-import math
-try:
-    from tqdm import tqdm
-    has_tqdm = True
-except ImportError:
-    has_tqdm = False
+#!/usr/bin/env python3
+"""
+Minimal CLIP-based Photo Filter - Separates photos from non-photos
+"""
+import os, sys, shutil, time
+from pathlib import Path
+from tqdm import tqdm
+import torch
+import PIL.Image as PILImage
+import open_clip
 
-# Configuration
-PHOTOS_DIR = "yearly_photos"  # Base directory with year subfolders
-MOVE_NON_PHOTOS = True        # If True, move non-photos to separate folder
+#############################################
+# CONFIGURATION
+#############################################
+BASE_DIR = "yearly_photos"     # Base directory with year folders
+START_YEAR = 2007              # Start year
+END_YEAR = 2025                # End year
+BATCH_SIZE = 64                # Images per batch
+MODEL_NAME = 'ViT-B-32'        # CLIP model to use
+#############################################
 
-def analyze_image(image_path):
-    """Analyze an image to determine if it's a photograph using simple heuristics."""
-    try:
-        # Open the image
-        img = Image.open(image_path)
+# Minimal logging setup
+def log(message):
+    print(f"{time.strftime('%H:%M:%S')} - {message}")
+
+class PhotoClassifier:
+    def __init__(self):
+        log(f"Loading CLIP model ({MODEL_NAME})...")
+        torch.manual_seed(42)
         
-        # Basic checks
-        width, height = img.size
+        self.model, _, self.preprocess = open_clip.create_model_and_transforms(
+            MODEL_NAME, pretrained='laion2b_s34b_b79k')
+        self.tokenizer = open_clip.get_tokenizer(MODEL_NAME)
         
-        # 1. Check image dimensions (very small images unlikely to be photos)
-        if width < 50 or height < 50:
-            return {'is_photo': False, 'reason': 'too small'}
-            
-        # 2. Convert to RGB if needed
-        if img.mode != 'RGB':
-            img = img.convert('RGB')
-        
-        # 3. Get image statistics
-        stat = ImageStat.Stat(img)
-        
-        # 4. Check aspect ratio (diagrams/illustrations often have extreme ratios)
-        aspect_ratio = max(width, height) / min(width, height)
-        if aspect_ratio > 3:
-            return {'is_photo': False, 'reason': 'extreme aspect ratio'}
-        
-        # 5. Check color variance (photos typically have more varied colors)
-        r_var, g_var, b_var = stat.var
-        color_variance = (r_var + g_var + b_var) / 3
-        if color_variance < 100:
-            return {'is_photo': False, 'reason': 'low color variance'}
-        
-        # 6. Check color distribution
-        r_mean, g_mean, b_mean = stat.mean
-        overall_brightness = (r_mean + g_mean + b_mean) / 3
-        
-        # Very uniform brightness suggests graphics/illustrations
-        if min(stat.stddev) < 20:
-            return {'is_photo': False, 'reason': 'uniform color distribution'}
-            
-        # 7. Analyze color count by sampling (full analysis too slow)
-        img_small = img.resize((50, 50))  # Downsize for faster processing
-        pixels = list(img_small.getdata())
-        unique_colors = len(set(pixels))
-        
-        # Photos typically have many unique colors
-        if unique_colors < 500:
-            return {'is_photo': False, 'reason': 'limited color palette'}
-            
-        # 8. Check for extremely uniform areas (suggests graphics)
-        img_array = np.array(img_small)
-        blocks = [
-            img_array[0:25, 0:25], 
-            img_array[0:25, 25:50],
-            img_array[25:50, 0:25],
-            img_array[25:50, 25:50]
+        # Simple photo vs non-photo prompts
+        self.prompts = [
+            "a genuine photograph taken with a camera",  # Photo prompt
+            "an illustration or drawing",                # Non-photo prompts
+            "a painting or artwork", 
+            "a digital image or render",
+            "a document or text",
         ]
-        for block in blocks:
-            block_var = np.var(block)
-            if block_var < 50:  # Very uniform block
-                return {'is_photo': False, 'reason': 'contains uniform areas'}
         
-        # If it passed all tests, it's likely a photograph
-        return {'is_photo': True, 'reason': 'passed all checks'}
+        # First prompt is photo, rest are non-photo
+        self.photo_idx = {0}
+        self.non_photo_idx = set(range(1, len(self.prompts)))
         
-    except Exception as e:
-        print(f"Error analyzing {image_path}: {e}")
-        return {'is_photo': True, 'reason': 'error in analysis'}
+        # Pre-compute text features
+        self.text_tokens = self.tokenizer(self.prompts)
+        self.model.eval()
+        with torch.no_grad():
+            self.text_features = self.model.encode_text(self.text_tokens)
+            self.text_features = self.text_features / self.text_features.norm(dim=-1, keepdim=True)
+    
+    def classify_batch(self, image_paths):
+        """Identify photos vs non-photos"""
+        if not image_paths:
+            return []
+            
+        # Process images
+        images = []
+        valid_indices = []
+        
+        for i, path in enumerate(image_paths):
+            try:
+                with PILImage.open(path) as img:
+                    img_tensor = self.preprocess(img.convert("RGB"))
+                    images.append(img_tensor)
+                    valid_indices.append(i)
+            except Exception:
+                pass  # Skip problematic images
+        
+        if not images:
+            return [False] * len(image_paths)
+            
+        # Run image batch through CLIP
+        with torch.no_grad():
+            image_batch = torch.stack(images)
+            image_features = self.model.encode_image(image_batch)
+            image_features = image_features / image_features.norm(dim=-1, keepdim=True)
+            
+            # Calculate scores
+            similarities = image_features @ self.text_features.T
+            photo_scores = similarities[:, list(self.photo_idx)].max(dim=1).values
+            non_photo_scores = similarities[:, list(self.non_photo_idx)].max(dim=1).values
+            is_photo = photo_scores > non_photo_scores
+        
+        # Build results list (default False for invalid images)
+        results = [False] * len(image_paths)
+        for idx, valid_idx in enumerate(valid_indices):
+            results[valid_idx] = is_photo[idx].item()
+        
+        return results
 
-def process_year_directory(year_dir):
-    """Process all images in a year directory."""
-    # Create a directory for non-photos if needed
-    non_photos_dir = os.path.join(year_dir, "non_photos")
-    if MOVE_NON_PHOTOS and not os.path.exists(non_photos_dir):
-        os.makedirs(non_photos_dir, exist_ok=True)
+def process_directory(classifier, dir_path):
+    """Process all images in a directory"""
+    dir_path = Path(dir_path)
+    log(f"Processing: {dir_path.name}")
     
-    # Get all image files
-    image_files = glob(os.path.join(year_dir, "*.jpg")) + \
-                  glob(os.path.join(year_dir, "*.jpeg")) + \
-                  glob(os.path.join(year_dir, "*.png")) + \
-                  glob(os.path.join(year_dir, "*.gif"))
+    # Create non_photo directory
+    non_photo_dir = dir_path / "non_photo"
+    non_photo_dir.mkdir(exist_ok=True)
     
-    if not image_files:
-        print(f"No image files found in {year_dir}")
-        return 0, 0
+    # Find all images
+    extensions = {'.jpg', '.jpeg', '.png', '.tiff', '.tif'}
+    main_images = []
+    non_photo_images = []
     
-    # Process each image
-    print(f"Processing {len(image_files)} images in {year_dir}...")
-    photo_count = 0
-    non_photo_count = 0
+    # Collect files from main directory
+    for ext in extensions:
+        main_images.extend([str(p) for p in dir_path.glob(f"*{ext}") if p.parent.name != "non_photo"])
+        main_images.extend([str(p) for p in dir_path.glob(f"*{ext.upper()}") if p.parent.name != "non_photo"])
     
-    # Use tqdm if available, otherwise use simple counter
-    if has_tqdm:
-        iterator = tqdm(image_files)
-    else:
-        iterator = image_files
-        print(f"0/{len(image_files)} processed", end='\r')
+    # Collect files from non_photo directory
+    for ext in extensions:
+        non_photo_images.extend([str(p) for p in non_photo_dir.glob(f"*{ext}")])
+        non_photo_images.extend([str(p) for p in non_photo_dir.glob(f"*{ext.upper()}")])
     
-    for i, image_path in enumerate(iterator):
-        # Update progress if not using tqdm
-        if not has_tqdm and (i % 5 == 0 or i+1 == len(image_files)):
-            print(f"{i+1}/{len(image_files)} processed", end='\r')
+    log(f"Found {len(main_images)} images in main directory, {len(non_photo_images)} in non_photo")
+    
+    # Process main directory images
+    kept = 0
+    moved = 0
+    
+    if main_images:
+        for i in tqdm(range(0, len(main_images), BATCH_SIZE), desc="Main directory"):
+            batch = main_images[i:i+BATCH_SIZE]
+            results = classifier.classify_batch(batch)
             
-        # Skip if already in non_photos directory
-        if "/non_photos/" in image_path:
-            continue
-            
-        # Get the filename
-        filename = os.path.basename(image_path)
-        
-        # Analyze the image
-        analysis = analyze_image(image_path)
-        
-        if analysis['is_photo']:
-            photo_count += 1
-        else:
-            non_photo_count += 1
-            
-            # Move non-photos if requested
-            if MOVE_NON_PHOTOS:
-                try:
-                    shutil.move(image_path, os.path.join(non_photos_dir, filename))
-                    reason = analysis.get('reason', 'unknown')
-                    print(f"  ↦ Moved non-photo to non_photos/ - Reason: {reason}")
-                except Exception as e:
-                    print(f"  ⚠️ Failed to move {filename}: {e}")
+            for path, is_photo in zip(batch, results):
+                if is_photo:
+                    kept += 1
+                else:
+                    # Move to non_photo directory
+                    filename = os.path.basename(path)
+                    dest_path = str(non_photo_dir / filename)
+                    shutil.move(path, dest_path)
+                    moved += 1
     
-    if not has_tqdm:
-        print()  # New line after progress display
-    print(f"Year {os.path.basename(year_dir)}: {photo_count} photos, {non_photo_count} non-photos")
-    return photo_count, non_photo_count
+    # Process non_photo directory images
+    rescued = 0
+    
+    if non_photo_images:
+        for i in tqdm(range(0, len(non_photo_images), BATCH_SIZE), desc="Non_photo directory"):
+            batch = non_photo_images[i:i+BATCH_SIZE]
+            results = classifier.classify_batch(batch)
+            
+            for path, is_photo in zip(batch, results):
+                if is_photo:
+                    # Move back to main directory
+                    filename = os.path.basename(path)
+                    dest_path = str(dir_path / filename)
+                    shutil.move(path, dest_path)
+                    rescued += 1
+    
+    log(f"Kept {kept} photos, moved {moved} non-photos, rescued {rescued} photos")
+    return kept, moved, rescued
 
 def main():
-    """Main function to process all year directories."""
-    if not os.path.exists(PHOTOS_DIR):
-        print(f"Error: Directory '{PHOTOS_DIR}' not found.")
-        return
+    if not os.path.exists(BASE_DIR):
+        log(f"Error: Base directory does not exist: {BASE_DIR}")
+        sys.exit(1)
     
-    # Find all year directories
-    year_dirs = [d for d in glob(os.path.join(PHOTOS_DIR, "*")) if os.path.isdir(d)]
-    if not year_dirs:
-        print(f"No year directories found in {PHOTOS_DIR}")
-        return
+    # Initialize classifier
+    classifier = PhotoClassifier()
     
-    print(f"Found {len(year_dirs)} year directories to process")
+    # Process each year in the range
+    start_time = time.time()
+    total_kept = total_moved = total_rescued = 0
+    years_processed = 0
     
-    # Process each year directory
-    total_photos = 0
-    total_non_photos = 0
-    
-    for year_dir in sorted(year_dirs):
-        photos, non_photos = process_year_directory(year_dir)
-        total_photos += photos
-        total_non_photos += non_photos
+    for year in range(START_YEAR, END_YEAR + 1):
+        year_dir = os.path.join(BASE_DIR, str(year))
+        if os.path.exists(year_dir):
+            kept, moved, rescued = process_directory(classifier, year_dir)
+            total_kept += kept
+            total_moved += moved
+            total_rescued += rescued
+            years_processed += 1
     
     # Print summary
-    total_images = total_photos + total_non_photos
-    if total_images > 0:
-        print("\n" + "="*50)
-        print("ANALYSIS COMPLETE")
-        print("="*50)
-        print(f"Total images processed: {total_images}")
-        print(f"Images classified as photographs: {total_photos} ({total_photos/total_images*100:.1f}%)")
-        print(f"Images classified as non-photographs: {total_non_photos} ({total_non_photos/total_images*100:.1f}%)")
-        
-        if MOVE_NON_PHOTOS:
-            print("\nNon-photographic images have been moved to 'non_photos' subdirectories")
-    else:
-        print("No images were processed.")
+    elapsed = time.time() - start_time
+    log(f"COMPLETE: Processed {years_processed} years in {elapsed:.1f} seconds")
+    log(f"Photos kept: {total_kept}, Non-photos moved: {total_moved}, Photos rescued: {total_rescued}")
 
 if __name__ == "__main__":
     try:
         main()
     except KeyboardInterrupt:
-        print("\nProcess interrupted by user")
+        log("Interrupted by user")
+        sys.exit(1)
     except Exception as e:
-        print(f"Error: {e}")
+        log(f"Error: {e}")
         sys.exit(1)

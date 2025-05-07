@@ -5,8 +5,14 @@ from sklearn.cluster import KMeans
 import os
 from collections import defaultdict
 
-def main():
+def unpack_rgb(packed_color):
+    """Unpack a color from integer format to RGB components"""
+    r = (packed_color >> 16) & 0xFF
+    g = (packed_color >> 8) & 0xFF
+    b = packed_color & 0xFF
+    return [r, g, b]
 
+def main():
     # Load color data
     print("Loading color data...")
     with open("unique_colors_history.json", "r") as f:
@@ -19,8 +25,8 @@ def main():
     k_values = [4, 8, 16, 32, 64]
 
     # Preprocess colors for efficiency
-    unique_rgb_set = set()
-    all_seen_colors = []
+    unique_packed_set = set()  # Track seen packed colors
+    all_seen_colors = []       # RGB unpacked colors for clustering
 
     # Year-by-year clustering results
     year_clusters = {}
@@ -34,14 +40,15 @@ def main():
         print(f"\nProcessing year {year}...")
         
         # Add new unique colors from this year
-        new_colors = []
-        for rgb in year_data.get("color", []):
-            rgb_tuple = tuple(rgb)
-            if rgb_tuple not in unique_rgb_set:
-                unique_rgb_set.add(rgb_tuple)
-                new_colors.append(rgb)
+        new_unpacked_colors = []
+        for packed_color in year_data.get("color", []):
+            if packed_color not in unique_packed_set:
+                unique_packed_set.add(packed_color)
+                # Unpack the integer value to RGB components
+                rgb_values = unpack_rgb(packed_color)
+                new_unpacked_colors.append(rgb_values)
         
-        all_seen_colors.extend(new_colors)
+        all_seen_colors.extend(new_unpacked_colors)
         
         # Skip clustering if not enough colors yet
         if len(all_seen_colors) < max(k_values):
@@ -99,17 +106,18 @@ def main():
             }
         
         # Store all k results for this year
-        year_clusters[year] = year_results
+        year_clusters[str(year)] = year_results  # Make sure year is stored as string
 
     # Create output data structure 
     output_data = {
-        "total_unique_colors": len(all_seen_colors),
+        "total_unique_colors": len(unique_packed_set),
         "all_years": [year_data.get("year") for year_data in color_data],
         "year_clusters": year_clusters
     }
 
     # Save to file
-    output_path = "yearly_clustered_colors.json"
+    output_path = os.path.join("assets", "yearly_clustered_colors.json")
+    os.makedirs(os.path.dirname(output_path), exist_ok=True)
     print(f"\nSaving results to {output_path}")
     with open(output_path, "w") as f:
         json.dump(output_data, f)
