@@ -1,7 +1,7 @@
 // Configuration parameters for the 3D color wheel visualization
 export const CONFIG = {
   // STRUCTURE
-  radius: 40,
+  radius: 35,
   smallSphereRadius: 0.1,
   shells: 50,
   rotationSpeed: 0.0015,
@@ -44,9 +44,9 @@ export const CONFIG = {
   jitter: {
     enabled: true,
     intensity: 10.0,
-    thetaStrength: 1.5,
-    phiStrength: 1.5,
-    radialJitter: 1,
+    thetaStrength: 5,
+    phiStrength: 5,
+    radialJitter: 5,
   },
 
   // CLUSTERING VISUALIZATION
