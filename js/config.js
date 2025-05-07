@@ -43,10 +43,10 @@ export const CONFIG = {
   // POSITION JITTERING
   jitter: {
     enabled: true,
-    intensity: 8.0,
-    thetaStrength: 3,
-    phiStrength: 3,
-    radialJitter: 3,
+    intensity: 6,
+    thetaStrength: 1.5,
+    phiStrength: 1.5,
+    radialJitter: 1.5,
   },
 
   // CLUSTERING VISUALIZATION
