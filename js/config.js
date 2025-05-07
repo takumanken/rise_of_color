@@ -1,7 +1,7 @@
 // Configuration parameters for the 3D color wheel visualization
 export const CONFIG = {
   // STRUCTURE
-  radius: 42,
+  radius: 44,
   smallSphereRadius: 0.1,
   shells: 50,
   rotationSpeed: 0.0015,
