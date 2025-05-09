@@ -1,25 +1,22 @@
 #!/usr/bin/env python3
-"""
-Minimal CLIP-based Photo Filter - Separates photos from non-photos
-"""
-import os, sys, shutil, time
+"""CLIP-based Photo Filter - Separates photos from non-photos"""
+import os
+import sys
+import shutil
+import time
 from pathlib import Path
 from tqdm import tqdm
 import torch
 import PIL.Image as PILImage
 import open_clip
 
-#############################################
-# CONFIGURATION
-#############################################
-BASE_DIR = "yearly_photos"     # Base directory with year folders
-START_YEAR = 2007              # Start year
-END_YEAR = 2025                # End year
-BATCH_SIZE = 64                # Images per batch
-MODEL_NAME = 'ViT-B-32'        # CLIP model to use
-#############################################
+# Configuration
+BASE_DIR = "yearly_photos"
+START_YEAR = 2007
+END_YEAR = 2025
+BATCH_SIZE = 64
+MODEL_NAME = 'ViT-B-32'
 
-# Minimal logging setup
 def log(message):
     print(f"{time.strftime('%H:%M:%S')} - {message}")
 
@@ -32,7 +29,6 @@ class PhotoClassifier:
             MODEL_NAME, pretrained='laion2b_s34b_b79k')
         self.tokenizer = open_clip.get_tokenizer(MODEL_NAME)
         
-        # Simple photo vs non-photo prompts
         self.prompts = [
             "a genuine photograph taken with a camera",  # Photo prompt
             "an illustration or drawing",                # Non-photo prompts
@@ -41,11 +37,9 @@ class PhotoClassifier:
             "a document or text",
         ]
         
-        # First prompt is photo, rest are non-photo
         self.photo_idx = {0}
         self.non_photo_idx = set(range(1, len(self.prompts)))
         
-        # Pre-compute text features
         self.text_tokens = self.tokenizer(self.prompts)
         self.model.eval()
         with torch.no_grad():
@@ -53,11 +47,7 @@ class PhotoClassifier:
             self.text_features = self.text_features / self.text_features.norm(dim=-1, keepdim=True)
     
     def classify_batch(self, image_paths):
-        """Identify photos vs non-photos"""
-        if not image_paths:
-            return []
             
-        # Process images
         images = []
         valid_indices = []
         
@@ -68,24 +58,21 @@ class PhotoClassifier:
                     images.append(img_tensor)
                     valid_indices.append(i)
             except Exception:
-                pass  # Skip problematic images
+                pass
         
         if not images:
             return [False] * len(image_paths)
             
-        # Run image batch through CLIP
         with torch.no_grad():
             image_batch = torch.stack(images)
             image_features = self.model.encode_image(image_batch)
             image_features = image_features / image_features.norm(dim=-1, keepdim=True)
             
-            # Calculate scores
             similarities = image_features @ self.text_features.T
             photo_scores = similarities[:, list(self.photo_idx)].max(dim=1).values
             non_photo_scores = similarities[:, list(self.non_photo_idx)].max(dim=1).values
             is_photo = photo_scores > non_photo_scores
         
-        # Build results list (default False for invalid images)
         results = [False] * len(image_paths)
         for idx, valid_idx in enumerate(valid_indices):
             results[valid_idx] = is_photo[idx].item()
@@ -93,32 +80,26 @@ class PhotoClassifier:
         return results
 
 def process_directory(classifier, dir_path):
-    """Process all images in a directory"""
     dir_path = Path(dir_path)
     log(f"Processing: {dir_path.name}")
     
-    # Create non_photo directory
     non_photo_dir = dir_path / "non_photo"
     non_photo_dir.mkdir(exist_ok=True)
     
-    # Find all images
     extensions = {'.jpg', '.jpeg', '.png', '.tiff', '.tif'}
     main_images = []
     non_photo_images = []
     
-    # Collect files from main directory
     for ext in extensions:
         main_images.extend([str(p) for p in dir_path.glob(f"*{ext}") if p.parent.name != "non_photo"])
         main_images.extend([str(p) for p in dir_path.glob(f"*{ext.upper()}") if p.parent.name != "non_photo"])
     
-    # Collect files from non_photo directory
     for ext in extensions:
         non_photo_images.extend([str(p) for p in non_photo_dir.glob(f"*{ext}")])
         non_photo_images.extend([str(p) for p in non_photo_dir.glob(f"*{ext.upper()}")])
     
     log(f"Found {len(main_images)} images in main directory, {len(non_photo_images)} in non_photo")
     
-    # Process main directory images
     kept = 0
     moved = 0
     
@@ -131,13 +112,11 @@ def process_directory(classifier, dir_path):
                 if is_photo:
                     kept += 1
                 else:
-                    # Move to non_photo directory
                     filename = os.path.basename(path)
                     dest_path = str(non_photo_dir / filename)
                     shutil.move(path, dest_path)
                     moved += 1
     
-    # Process non_photo directory images
     rescued = 0
     
     if non_photo_images:
@@ -147,7 +126,6 @@ def process_directory(classifier, dir_path):
             
             for path, is_photo in zip(batch, results):
                 if is_photo:
-                    # Move back to main directory
                     filename = os.path.basename(path)
                     dest_path = str(dir_path / filename)
                     shutil.move(path, dest_path)
@@ -161,10 +139,8 @@ def main():
         log(f"Error: Base directory does not exist: {BASE_DIR}")
         sys.exit(1)
     
-    # Initialize classifier
     classifier = PhotoClassifier()
     
-    # Process each year in the range
     start_time = time.time()
     total_kept = total_moved = total_rescued = 0
     years_processed = 0
@@ -178,7 +154,6 @@ def main():
             total_rescued += rescued
             years_processed += 1
     
-    # Print summary
     elapsed = time.time() - start_time
     log(f"COMPLETE: Processed {years_processed} years in {elapsed:.1f} seconds")
     log(f"Photos kept: {total_kept}, Non-photos moved: {total_moved}, Photos rescued: {total_rescued}")
