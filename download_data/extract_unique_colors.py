@@ -13,7 +13,7 @@ OUTPUT_FILE = "unique_colors_history.json"
 MAX_WORKERS = os.cpu_count()
 RESIZE_TO = 250
 CHUNKSIZE = 8
-COLOR_DEPTH = 5.5
+COLOR_DEPTH = 6
 
 def quantize_colors(flat_rgb):
     """Quantize colors"""
@@ -50,16 +50,12 @@ def extract_unique_colors_by_year():
     
     with ProcessPoolExecutor(max_workers=MAX_WORKERS) as pool:
         for year, year_path in year_dirs:
-            print(f"Processing year {year}...")
+
+            if year % 10 == 0:
+                print(f"Processing {year}s...")
             
-            image_files = [
-                f for f in year_path.iterdir() 
-                if f.is_file() and f.suffix.lower() in ('.jpg', '.jpeg', '.png', '.gif')
-            ]
-            
-            if not image_files:
-                continue
-                
+            image_files = [f for f in year_path.iterdir()]
+                            
             year_colors = set()
             for color_array in pool.map(colors_in_image, image_files, chunksize=CHUNKSIZE):
                 if len(color_array) > 0:
@@ -72,9 +68,8 @@ def extract_unique_colors_by_year():
                 "year": year,
                 "color": [int(x) for x in unique]
             })
-            
-            print(f"  Found {len(unique)} new colors")
-    
+            print(f"Processed {year}: {len(seen)} colors")
+                
     with open(OUTPUT_FILE, 'w') as f:
         json.dump(result, f)
         
