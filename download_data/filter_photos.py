@@ -46,8 +46,6 @@ def setup_model():
 
 def classify_batch(model, preprocess, text_features, image_paths):
     """Classify a batch of images as photos or non-photos"""
-    if not image_paths:
-        return []
         
     images = []
     valid_indices = []
@@ -60,10 +58,7 @@ def classify_batch(model, preprocess, text_features, image_paths):
                 valid_indices.append(i)
         except Exception:
             pass
-    
-    if not images:
-        return [False] * len(image_paths)
-        
+            
     with torch.no_grad():
         image_batch = torch.stack(images)
         image_features = model.encode_image(image_batch)
