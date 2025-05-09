@@ -1,25 +1,28 @@
+#!/usr/bin/env python3
+"""Download historical photographs from Wikimedia Commons organized by year"""
 from __future__ import annotations
-import os, time, requests, sys, shutil
-from typing import Dict, Any, List
+import os
+import time
+import requests
+import sys
+import shutil
 import re
 from concurrent.futures import ThreadPoolExecutor, as_completed
+from typing import Dict, Any, List
 
-#############################################
-# CONFIGURATION - EDIT THESE VALUES AS NEEDED
-#############################################
-START_YEAR = 1901            # First year to download
-END_YEAR = 2025              # Last year to download
-MAX_IMAGES_PER_YEAR = 500    # Maximum images per year
-THUMBNAIL_WIDTH = 800        # Width for better quality
-OUTPUT_DIRECTORY = "yearly_photos"  # Base directory
-API_DELAY = 0.01             # Even faster delay
-CLEAR_YEAR_FOLDER = True     # Clear year folder before downloading
-MAX_WORKERS = 10             # Parallel downloads
-MINIMAL_LOGGING = True       # Reduce console output for speed
-#############################################
+# Configuration
+START_YEAR = 1901
+END_YEAR = 2025
+MAX_IMAGES_PER_YEAR = 500
+THUMBNAIL_WIDTH = 800
+OUTPUT_DIRECTORY = "yearly_photos"
+API_DELAY = 0.01
+CLEAR_YEAR_FOLDER = True
+MAX_WORKERS = 10
+MINIMAL_LOGGING = True
 
 API = "https://commons.wikimedia.org/w/api.php"
-USER_AGENT = "DataAsMaterial/1.0 (course-project@parsons.edu; https://github.com/parsons/data-as-material)"
+USER_AGENT = "DataAsMaterial/1.0 (course-project@parsons.edu)"
 
 def fetch_batch(session: requests.Session, params: Dict[str, Any]) -> Dict[str, Any]:
     """Query the MediaWiki API and return parsed JSON."""
@@ -30,35 +33,28 @@ def fetch_batch(session: requests.Session, params: Dict[str, Any]) -> Dict[str, 
 def get_file_extension(url):
     """Extract file extension from URL."""
     match = re.search(r'\.([a-zA-Z0-9]{1,4})$', url)
-    if match:
-        return match.group(1).lower()
-    return 'jpg'  # Default to jpg if no extension found
+    return match.group(1).lower() if match else 'jpg'
 
 def get_images_from_category(session: requests.Session, year: int, width: int, limit: int, delay: float) -> List[Dict]:
-    """Get images from year category - SPEED OPTIMIZED."""
+    """Get images from year category."""
     params = {
         "action": "query",
         "format": "json",
         "generator": "categorymembers",
         "gcmtitle": f"Category:{year}_photographs",
         "gcmtype": "file",
-        "gcmlimit": "500",  # Maximum allowed by API
+        "gcmlimit": "500",
         "prop": "imageinfo",
         "iiprop": "url",
         "iiurlwidth": str(width),
     }
     
     images = []
-    continuation_key = None
-    debug_printed = False  # Flag to ensure we only print once
     
     if not MINIMAL_LOGGING:
         print(f"Searching category: Category:{year}_photographs")
     
     while len(images) < limit:
-        if continuation_key:
-            params["gcmcontinue"] = continuation_key
-        
         try:
             data = fetch_batch(session, params)
             
@@ -81,21 +77,23 @@ def get_images_from_category(session: requests.Session, year: int, width: int, l
                 print(f"  Found {len(batch_images)} images in this batch, total: {len(images)}")
             
             if "continue" in data:
-                # Handle different types of continuation tokens
                 if "gcmcontinue" in data["continue"]:
                     params["gcmcontinue"] = data["continue"]["gcmcontinue"]
                     if "continue" in data["continue"]:
                         params["continue"] = data["continue"]["continue"]
-                    print(f"  Using gcmcontinue token: {data['continue']['gcmcontinue'][:20]}...")
+                    if not MINIMAL_LOGGING:
+                        print(f"  Using gcmcontinue token")
                 elif "iicontinue" in data["continue"]:
                     params["iicontinue"] = data["continue"]["iicontinue"]
                     if "continue" in data["continue"]:
                         params["continue"] = data["continue"]["continue"]
-                    print(f"  Using iicontinue token: {data['continue']['iicontinue'][:20]}...")
+                    if not MINIMAL_LOGGING:
+                        print(f"  Using iicontinue token")
                 
                 time.sleep(delay)
             else:
-                print("  No continuation token found, ending search")
+                if not MINIMAL_LOGGING:
+                    print("  No continuation token found, ending search")
                 break
             
             if len(images) >= limit:
@@ -108,42 +106,37 @@ def get_images_from_category(session: requests.Session, year: int, width: int, l
     return images[:limit]
 
 def download_image(args):
-    """Download a single image - for parallel execution."""
+    """Download a single image."""
     session, img, outdir = args
     page_id = img["page_id"]
     file_url = img["url"]
     
     try:
         extension = get_file_extension(file_url)
-        id_filename = f"{page_id}.{extension}"
-        download_filename = os.path.join(outdir, id_filename)
+        filename = f"{page_id}.{extension}"
+        filepath = os.path.join(outdir, filename)
         
         with session.get(file_url, stream=True, timeout=15) as response:
             response.raise_for_status()
-            with open(download_filename, "wb") as fh:
-                for chunk in response.iter_content(262144):  # 256KB chunks
+            with open(filepath, "wb") as fh:
+                for chunk in response.iter_content(262144):
                     fh.write(chunk)
         return True
     except:
         return False
 
 def download_year_images(year: int, width: int, limit: int, delay: float, base_outdir: str) -> int:
-    """Download images from a specific year's category - SPEED OPTIMIZED"""
+    """Download images from a specific year's category"""
     outdir = os.path.join(base_outdir, f"{year}")
     
-    # Clear year folder if requested
     if CLEAR_YEAR_FOLDER and os.path.exists(outdir):
-        if not MINIMAL_LOGGING:
-            print(f"Clearing existing folder: {outdir}")
         shutil.rmtree(outdir)
     
-    # Create year directory
     os.makedirs(outdir, exist_ok=True)
     
     session = requests.Session()
     session.headers.update({"User-Agent": USER_AGENT})
     
-    # Get images from category
     images = get_images_from_category(session, year, width, limit, delay)
     
     if not images:
@@ -152,18 +145,15 @@ def download_year_images(year: int, width: int, limit: int, delay: float, base_o
     
     print(f"Year {year}: Found {len(images)} images - downloading...")
     
-    # Prepare download sessions - one per worker
     download_sessions = [requests.Session() for _ in range(MAX_WORKERS)]
     for s in download_sessions:
         s.headers.update({"User-Agent": USER_AGENT})
     
-    # Create download tasks
     tasks = []
     for i, img in enumerate(images):
         session_idx = i % len(download_sessions)
         tasks.append((download_sessions[session_idx], img, outdir))
     
-    # Parallel download with thread pool
     successful = 0
     with ThreadPoolExecutor(max_workers=MAX_WORKERS) as executor:
         future_to_task = {executor.submit(download_image, task): task for task in tasks}
@@ -172,7 +162,6 @@ def download_year_images(year: int, width: int, limit: int, delay: float, base_o
             if future.result():
                 successful += 1
             
-            # Minimal progress reporting
             if i % 50 == 0 and i > 0 and not MINIMAL_LOGGING:
                 print(f"  {i}/{len(tasks)} images processed...")
     
@@ -180,7 +169,7 @@ def download_year_images(year: int, width: int, limit: int, delay: float, base_o
     return successful
 
 def main() -> None:
-    """Main entry point - SPEED OPTIMIZED"""
+    """Main entry point"""
     os.makedirs(OUTPUT_DIRECTORY, exist_ok=True)
     
     total_images = 0
