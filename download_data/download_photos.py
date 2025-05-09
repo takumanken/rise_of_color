@@ -11,15 +11,13 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 from typing import Dict, Any, List
 
 # Configuration
-START_YEAR = 1901
-END_YEAR = 2025
+START_YEAR = 2024
+END_YEAR = 2024
 MAX_IMAGES_PER_YEAR = 500
 THUMBNAIL_WIDTH = 800
 OUTPUT_DIRECTORY = "yearly_photos"
-API_DELAY = 0.01
-CLEAR_YEAR_FOLDER = True
+API_DELAY = 0.5
 MAX_WORKERS = 10
-MINIMAL_LOGGING = True
 
 API = "https://commons.wikimedia.org/w/api.php"
 USER_AGENT = "DataAsMaterial/1.0 (course-project@parsons.edu)"
@@ -51,8 +49,7 @@ def get_images_from_category(session: requests.Session, year: int, width: int, l
     
     images = []
     
-    if not MINIMAL_LOGGING:
-        print(f"Searching category: Category:{year}_photographs")
+    print(f"Searching category: Category:{year}_photographs")
     
     while len(images) < limit:
         try:
@@ -73,34 +70,24 @@ def get_images_from_category(session: requests.Session, year: int, width: int, l
             
             images.extend(batch_images)
             
-            if not MINIMAL_LOGGING:
-                print(f"  Found {len(batch_images)} images in this batch, total: {len(images)}")
+            print(f"  Found {len(batch_images)} images in this batch, total: {len(images)}")
             
             if "continue" in data:
-                if "gcmcontinue" in data["continue"]:
-                    params["gcmcontinue"] = data["continue"]["gcmcontinue"]
-                    if "continue" in data["continue"]:
-                        params["continue"] = data["continue"]["continue"]
-                    if not MINIMAL_LOGGING:
-                        print(f"  Using gcmcontinue token")
-                elif "iicontinue" in data["continue"]:
+                if "iicontinue" in data["continue"]:
                     params["iicontinue"] = data["continue"]["iicontinue"]
                     if "continue" in data["continue"]:
                         params["continue"] = data["continue"]["continue"]
-                    if not MINIMAL_LOGGING:
-                        print(f"  Using iicontinue token")
+                    print(f"  Using iicontinue token")
                 
                 time.sleep(delay)
             else:
-                if not MINIMAL_LOGGING:
-                    print("  No continuation token found, ending search")
+                print("  No continuation token found, ending search")
                 break
             
             if len(images) >= limit:
                 break
         except Exception as e:
-            if not MINIMAL_LOGGING:
-                print(f"Error fetching batch: {e}")
+            print(f"Error fetching batch: {e}")
             break
     
     return images[:limit]
@@ -129,7 +116,7 @@ def download_year_images(year: int, width: int, limit: int, delay: float, base_o
     """Download images from a specific year's category"""
     outdir = os.path.join(base_outdir, f"{year}")
     
-    if CLEAR_YEAR_FOLDER and os.path.exists(outdir):
+    if os.path.exists(outdir):
         shutil.rmtree(outdir)
     
     os.makedirs(outdir, exist_ok=True)
@@ -162,7 +149,7 @@ def download_year_images(year: int, width: int, limit: int, delay: float, base_o
             if future.result():
                 successful += 1
             
-            if i % 50 == 0 and i > 0 and not MINIMAL_LOGGING:
+            if i % 50 == 0 and i > 0:
                 print(f"  {i}/{len(tasks)} images processed...")
     
     print(f"Year {year}: Downloaded {successful}/{len(images)} images")
@@ -173,7 +160,6 @@ def main() -> None:
     os.makedirs(OUTPUT_DIRECTORY, exist_ok=True)
     
     total_images = 0
-    start_time = time.time()
     
     for year in range(START_YEAR, END_YEAR + 1):
         year_start = time.time()
@@ -189,10 +175,8 @@ def main() -> None:
         print(f"Year {year} completed in {year_time:.1f} seconds ({images_downloaded} images)")
         total_images += images_downloaded
     
-    elapsed = time.time() - start_time
     print(f"\nDOWNLOAD COMPLETE")
     print(f"Total images: {total_images}")
-    print(f"Time: {elapsed:.1f} seconds ({total_images/elapsed:.1f} images/second)")
     print(f"Images saved to: {os.path.abspath(OUTPUT_DIRECTORY)}")
 
 if __name__ == "__main__":
