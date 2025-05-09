@@ -13,7 +13,7 @@ OUTPUT_FILE = "unique_colors_history.json"
 MAX_WORKERS = os.cpu_count()
 RESIZE_TO = 250
 CHUNKSIZE = 8
-COLOR_DEPTH = 6
+COLOR_DEPTH = 5.5
 
 def quantize_colors(flat_rgb):
     """Quantize colors"""
